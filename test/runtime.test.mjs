@@ -362,6 +362,82 @@ describe('facilitator notes', () => {
 });
 
 describe('saving', () => {
+  test('diagram IDs and names matching huddle survive save/reopen with a working API', async () => {
+    const diagrams = [
+      '<div id="huddle">Diagram</div>',
+      '<div id="huddle">First node</div><div id="huddle">Second node</div>',
+      '<img name="huddle" alt="Diagram">',
+    ];
+    for (const [index, diagram] of diagrams.entries()) {
+      await browser.open(sampleUrl);
+      const saved = await browser.call((diagram) => {
+        huddle.patch(`<section data-card="c16" data-kind="html">${diagram}</section>`);
+        huddle.comment('c16', 'Before reopening');
+        return huddle.serialize();
+      }, diagram);
+      const file = join(dir, `named-huddle-${index}.html`);
+      writeFileSync(file, saved);
+      await browser.open(pathToFileURL(file).href);
+      const reopened = await browser.call(() => {
+        huddle.patch('<section data-card="c5" data-kind="decision"><h3>Still patchable</h3></section>');
+        huddle.comment('c16', 'After reopening');
+        return {
+          ids: huddle.cards().map((c) => c.id),
+          title: document.querySelector('[data-card="c5"] h3').textContent,
+          notes: huddle.context().threads.c16.map((n) => n.text),
+          diagramNodes: document.querySelectorAll('[data-card="c16"] [id="huddle"], [data-card="c16"] [name="huddle"]').length,
+          toolbars: document.querySelectorAll('.huddle-toolbar').length,
+          buttons: document.querySelectorAll('.huddle-save').length,
+          problems: huddle.problems,
+        };
+      });
+      assert.deepEqual(reopened.ids, SAMPLE_IDS);
+      assert.equal(reopened.title, 'Still patchable');
+      assert.deepEqual(reopened.notes, ['Before reopening', 'After reopening']);
+      assert.equal(reopened.diagramNodes, index === 1 ? 2 : 1);
+      assert.equal(reopened.toolbars, 1);
+      assert.equal(reopened.buttons, 1);
+      assert.deepEqual(reopened.problems, []);
+      assert.deepEqual(browser.errors, []);
+    }
+  });
+
+  test('named showSaveFilePicker elements and collections still use the download fallback', async () => {
+    const diagrams = [
+      '<div id="showSaveFilePicker">Diagram</div>',
+      '<div id="showSaveFilePicker">First node</div><div id="showSaveFilePicker">Second node</div>',
+      '<img name="showSaveFilePicker" alt="Diagram">',
+    ];
+    for (const [index, diagram] of diagrams.entries()) {
+      await browser.open(sampleUrl);
+      const result = await browser.call(async (diagram) => {
+        delete window.showSaveFilePicker;
+        huddle.patch(`<section data-card="c16" data-kind="html">${diagram}</section>`);
+        huddle.comment('c16', 'Download me');
+        const named = window.showSaveFilePicker;
+        const namedNodes = named instanceof Element ? 1 : named.length;
+        let blob;
+        let clicked = 0;
+        URL.createObjectURL = (value) => { blob = value; return 'blob:download'; };
+        URL.revokeObjectURL = () => {};
+        HTMLAnchorElement.prototype.click = () => { clicked++; };
+        const status = await huddle.save();
+        const doc = new DOMParser().parseFromString(await blob.text(), 'text/html');
+        return {
+          namedNodes, status, clicked, dirty: huddle.dirty,
+          notes: JSON.parse(doc.querySelector('[data-huddle-context]').textContent).threads.c16.map((n) => n.text),
+          diagramNodes: doc.querySelectorAll('[data-card="c16"] [id="showSaveFilePicker"], [data-card="c16"] [name="showSaveFilePicker"]').length,
+        };
+      }, diagram);
+      assert.equal(result.namedNodes, index === 1 ? 2 : 1);
+      assert.equal(result.status, 'downloaded');
+      assert.equal(result.clicked, 1);
+      assert.equal(result.dirty, false);
+      assert.deepEqual(result.notes, ['Download me']);
+      assert.equal(result.diagramNodes, index === 1 ? 2 : 1);
+    }
+  });
+
   test('mutations during each asynchronous save stage remain unsaved', async () => {
     for (const stage of ['picker', 'create', 'write', 'close']) {
       await browser.open(sampleUrl);

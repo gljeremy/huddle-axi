@@ -2,7 +2,7 @@
 // Swaps one card in place (no reload), keeps the context block, and saves the file.
 (() => {
   'use strict';
-  if (window.huddle) return;
+  if (typeof window.huddle?.patch === 'function') return;
 
   const RULES = /*HUDDLE_RULES*/ null;
   const VERSION = /*HUDDLE_VERSION*/ '0.0.0';
@@ -251,7 +251,7 @@
     const savedGeneration = generation;
     const text = serialize();
     let result;
-    if (window.showSaveFilePicker) {
+    if (typeof window.showSaveFilePicker === 'function') {
       try {
         fileHandle ||= await window.showSaveFilePicker({
           suggestedName: fileName(),
