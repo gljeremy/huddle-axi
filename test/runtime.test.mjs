@@ -190,6 +190,110 @@ describe('patching a card', () => {
     assert.deepEqual(result.revisions, []);
   });
 
+  test('rejects legacy parsing tags before mutation and preserves a working saved board', async () => {
+    const result = await browser.call(() => {
+      const before = huddle.get('c16');
+      const outcomes = ['plaintext', 'xmp', 'listing', 'noembed', 'noframes'].map((tag) => {
+        try {
+          huddle.patch(`<section data-card="c16" data-kind="html"><${tag}>Example</${tag}></section>`);
+          return 'accepted';
+        } catch (err) {
+          return err.name;
+        }
+      });
+      return {
+        outcomes, unchanged: huddle.get('c16') === before,
+        dirty: huddle.dirty, revisions: huddle.context().revisions, saved: huddle.serialize(),
+      };
+    });
+    assert.deepEqual(result.outcomes, Array(5).fill('HuddleError'));
+    assert.equal(result.unchanged, true);
+    assert.equal(result.dirty, false);
+    assert.deepEqual(result.revisions, []);
+    const file = join(dir, 'rejected-parsing-tags.html');
+    writeFileSync(file, result.saved);
+    await browser.open(pathToFileURL(file).href);
+    const reopened = await browser.call(() => {
+      const ids = huddle.cards().map((c) => c.id);
+      huddle.patch('<section data-card="c16" data-kind="html"><pre>Example</pre></section>');
+      huddle.comment('c16', 'Still editable');
+      return {
+        ids, problems: huddle.problems,
+        text: document.querySelector('[data-card="c16"] pre').textContent,
+        notes: huddle.context().threads.c16.map((n) => n.text),
+      };
+    });
+    assert.deepEqual(reopened.ids, SAMPLE_IDS);
+    assert.deepEqual(reopened.problems, []);
+    assert.equal(reopened.text, 'Example');
+    assert.deepEqual(reopened.notes, ['Still editable']);
+    assert.deepEqual(browser.errors, []);
+  });
+
+  test('reserves descendant card and chrome markers across all card kinds and depths', async () => {
+    const result = await browser.call(() => {
+      const before = huddle.get('c1');
+      const target = document.querySelector('[data-card="c5"]');
+      const outcomes = [];
+      for (const kind of ['goal', 'decision', 'risk', 'metric', 'idea', 'action', 'note', 'html']) {
+        for (const attr of ['data-card="c5"', 'data-huddle-chrome']) {
+          for (const content of [`<p ${attr}>Important</p>`, `<ul><li><b ${attr}>Important</b></li></ul>`]) {
+            try {
+              huddle.patch(`<section data-card="c1" data-kind="${kind}"><h3>Diagram node</h3>${content}</section>`);
+              outcomes.push({ kind, attr, content, status: 'accepted' });
+            } catch (err) {
+              outcomes.push({ kind, attr, content, status: err.name });
+            }
+          }
+        }
+      }
+      const rejected = {
+        unchanged: huddle.get('c1') === before, dirty: huddle.dirty,
+        revisions: huddle.context().revisions, ids: huddle.cards().map((c) => c.id),
+      };
+      huddle.patch('<section data-card="c5" data-kind="decision"><h3>Real decision</h3></section>');
+      huddle.comment('c5', 'Real note');
+      return {
+        outcomes, rejected, sameTarget: target === document.querySelector('[data-card="c5"]'),
+        title: target.querySelector('h3').textContent,
+        notes: target.querySelector('.huddle-thread').textContent,
+        ids: huddle.cards().map((c) => c.id),
+      };
+    });
+    for (const outcome of result.outcomes) assert.equal(outcome.status, 'HuddleError', JSON.stringify(outcome));
+    assert.equal(result.rejected.unchanged, true);
+    assert.equal(result.rejected.dirty, false);
+    assert.deepEqual(result.rejected.revisions, []);
+    assert.deepEqual(result.rejected.ids, SAMPLE_IDS);
+    assert.equal(result.sameTarget, true);
+    assert.equal(result.title, 'Real decision');
+    assert.match(result.notes, /Real note/);
+    assert.deepEqual(result.ids, SAMPLE_IDS);
+  });
+
+  test('ordinary HTML data attributes and content survive decoration and save/reopen', async () => {
+    const saved = await browser.call(() => {
+      huddle.patch('<section data-card="c16" data-kind="html"><div data-diagram="node"><p>Important</p></div></section>');
+      huddle.comment('c16', 'Keep this diagram');
+      return huddle.serialize();
+    });
+    const file = join(dir, 'html-data-attributes.html');
+    writeFileSync(file, saved);
+    await browser.open(pathToFileURL(file).href);
+    const result = await browser.call(() => ({
+      text: document.querySelector('[data-card="c16"] [data-diagram="node"] p').textContent,
+      notes: document.querySelector('[data-card="c16"] .huddle-thread').textContent,
+      chrome: document.querySelectorAll('[data-card="c16"] .huddle-tag').length,
+      ids: huddle.cards().map((c) => c.id), problems: huddle.problems,
+    }));
+    assert.equal(result.text, 'Important');
+    assert.match(result.notes, /Keep this diagram/);
+    assert.equal(result.chrome, 1);
+    assert.deepEqual(result.ids, SAMPLE_IDS);
+    assert.deepEqual(result.problems, []);
+    assert.deepEqual(browser.errors, []);
+  });
+
   test('html cards retain the permitted direct URL schemes and inline diagram styling', async () => {
     const result = await browser.call(() => {
       huddle.patch(`<section data-card="c16" data-kind="html">

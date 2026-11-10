@@ -75,6 +75,9 @@
     const id = section.dataset.card;
     for (const el of section.querySelectorAll('*')) {
       const tag = el.localName.toLowerCase();
+      for (const name of RULES.reservedDescendantAttrs) {
+        if (el.hasAttribute(name)) throw new HuddleError(`${name} is reserved on card descendants (#${id})`);
+      }
       if (kind === 'html') {
         if (blocked.has(tag)) throw new HuddleError(`<${tag}> is not allowed, even in an html card (#${id})`);
         for (const { name, value } of el.attributes) {
