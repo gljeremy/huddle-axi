@@ -43,8 +43,11 @@ Creating a board requires Node.js 22 or later. Open `my-board.html` in Chrome or
 node src/cli.mjs open my-board.html
 ```
 
-This starts a small background server on 127.0.0.1 (one per machine; it stops by itself
-after 4 idle hours) and opens the board from it. While served, the board is live:
+This starts a small background server on 127.0.0.1 (it stops by itself after 4 idle
+hours) and opens the board from it. Keep one facilitator tab open per board; this is
+not a multi-viewer sync service. Do not edit the HTML file directly during a live
+session: the browser is the source of truth and saves its state over that file.
+While served, the board is live:
 
 - Each note is sent to the agent as well as saved.
 - Every change is written back into `my-board.html` within a fraction of a second, so
@@ -79,11 +82,10 @@ meta[1]{key,value}:
   decide by,end of session
 ```
 
-Fields: `id`, `kind`, `status`, `severity`, `progress`, `title`, `value` and `display`
-(a metric's number), `caption`, `body` (paragraphs), `bullets`, `options` (a decision's
-choices) and `meta` (key/value facts). Text fields may hold inline HTML such as `<b>` or
-`<code>`. An `html` card has only `html`. A card whose markup doesn't fit these fields is
-printed as its `<section>` HTML instead (`format: html`).
+The field reference and HTML mapping live in [src/card-model.mjs](src/card-model.mjs).
+An `html` card uses the `html` field for its content, alongside its card attributes.
+A card whose markup doesn't fit the model is printed as its `<section>` HTML instead
+(`format: html`).
 
 ```bash
 node src/cli.mjs patch my-board.html --card-file card.toon --note "marked decided"

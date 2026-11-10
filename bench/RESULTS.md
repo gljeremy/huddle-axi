@@ -120,9 +120,9 @@ Measured:
 | Stock Lavish, agent rewrites the file | 45.2 s | 1.1 s | **46.3 s** |
 | Stock Lavish, agent edits one card in place | 5.3 s | 1.1 s | **6.4 s** |
 
-Projected, not measured: huddle-axi's card patch with a DOM swap and no reload. That
-leaves agent time plus well under 0.1 s. The step 2 test gate stays at < 8 s from comment
-to visible.
+Projected, not measured here: huddle-axi's card patch with a DOM swap and no reload.
+That leaves agent time plus well under 0.1 s. See the [README status](../README.md)
+for the current implementation and measurement scope.
 
 ## What this changes in the plan
 
@@ -140,7 +140,7 @@ Judgement calls, not measured:
 - **Removing the reload comes next.** It's 1.1 s of a 6.4 s round, so it belongs in
   step 1, but it isn't the headline.
 - **Expect a small gain from TOON.** Its savings come on top of an edit that already takes
-  about 3 s. Step 2 tests that.
+  about 3 s.
 
 ## Not measured
 

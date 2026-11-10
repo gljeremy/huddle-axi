@@ -10,7 +10,8 @@
 //   options[]{label,detail,votes,chosen}          <ol><li data-votes data-chosen>label<small>detail</small>
 //   meta[]{key,value}                             <dl><dt>key</dt><dd>value</dd>
 //   html                                          kind html only: the card's inner markup
-// Text fields are inline HTML: b, strong, em, i, code, a and br are allowed, and a literal < is &lt;.
+// Content text is inline HTML; value is plain text for the <data> value attribute.
+// Markup restrictions are owned by src/rules.mjs and enforced by the browser runtime.
 import { KINDS, RULES } from './rules.mjs';
 import { ToonError, decode, encode } from './toon.mjs';
 
