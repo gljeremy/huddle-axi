@@ -61,7 +61,7 @@
     }
     const section = nodes[0];
     for (const { name, value } of section.attributes) {
-      if (!cardAttr[name]) throw new HuddleError(`card attribute ${name} is not allowed`);
+      if (!Object.hasOwn(cardAttr, name)) throw new HuddleError(`card attribute ${name} is not allowed`);
       if (!cardAttr[name].test(value)) throw new HuddleError(`card attribute ${name}="${value}" is not valid`);
     }
     if (!section.hasAttribute('data-card')) throw new HuddleError('a card needs a data-card id');
@@ -93,11 +93,11 @@
         }
         continue;
       }
+      if (!Object.hasOwn(RULES.tags, tag)) throw new HuddleError(`<${tag}> is not allowed in a ${kind} card (#${id})`);
       const allowed = RULES.tags[tag];
-      if (!allowed) throw new HuddleError(`<${tag}> is not allowed in a ${kind} card (#${id})`);
       for (const { name, value } of el.attributes) {
         if (!allowed.includes(name)) throw new HuddleError(`<${tag} ${name}> is not allowed in a ${kind} card (#${id})`);
-        if (attrPattern[name] && !attrPattern[name].test(value)) throw new HuddleError(`<${tag} ${name}="${value}"> is not valid (#${id})`);
+        if (Object.hasOwn(attrPattern, name) && !attrPattern[name].test(value)) throw new HuddleError(`<${tag} ${name}="${value}"> is not valid (#${id})`);
       }
     }
     if (kind === 'html') return;
