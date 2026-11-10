@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks commits that leave any text file over 1000 lines.
+exec node scripts/check-file-length.mjs
