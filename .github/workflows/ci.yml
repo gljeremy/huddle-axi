@@ -1,4 +1,4 @@
-name: lint
+name: ci
 
 on:
   pull_request:
@@ -18,3 +18,13 @@ jobs:
           node-version: 22
       # No dependencies yet, so no install step. Fails if any text file is over 1000 lines.
       - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # The runtime tests drive the Google Chrome that GitHub's Ubuntu runners ship with.
+      - run: npm test
