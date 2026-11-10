@@ -1,14 +1,19 @@
 {
   "name": "huddle-axi",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "A fast, single-file discussion board that an agent edits one card at a time. Forked in spirit from lavish-axi.",
   "type": "module",
+  "bin": {
+    "huddle-axi": "src/cli.mjs"
+  },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
-    "lint": "node scripts/check-file-length.mjs"
+    "lint": "node scripts/check-file-length.mjs",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "demo": "node src/cli.mjs new dist/demo.html --sample --force"
   },
   "license": "UNLICENSED"
 }
