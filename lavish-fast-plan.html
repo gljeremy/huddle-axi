@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fast Lavish: plan review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;1,500&family=Geist:wght@400;500;600;750&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, h1, h2, h3, li, td, th) { overflow-wrap: anywhere; }
+  :where(img, svg) { max-width: 100%; height: auto; }
+
+  :root {
+    --bg: #0f1115; --panel: #11141a; --bar: #171a21; --elev: #1c212b;
+    --b-subtle: #2a2f3a; --b: #303745; --b-strong: #3c4557;
+    --label: #8c96aa; --faint: #aeb6c6; --dim: #b9c0cf; --muted: #d8deea;
+    --fg: #f7f3ea; --brass: #f4c95d; --brass-ink: #17130a;
+    --sage: #8fe39e; --sage-bg: #172419; --rust: #f06464; --amber-bg: #25230f;
+    --serif: 'EB Garamond', Georgia, serif;
+    --sans: 'Geist', system-ui, 'Segoe UI', sans-serif;
+    --mono: 'Geist Mono', ui-monospace, Consolas, monospace;
+  }
+  html { background: var(--bg); color: var(--fg); color-scheme: dark; }
+  body { margin: 0; font: 15px/1.5 var(--sans); background: var(--bg); }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font: 500 44px/1.1 var(--serif); margin: 0 0 8px; letter-spacing: -0.01em; }
+  h2 { font: 600 13px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--brass); margin: 56px 0 6px; }
+  h3 { font: 600 17px/1.3 var(--sans); margin: 0 0 6px; }
+  .lede { font: italic 500 22px/1.35 var(--serif); color: var(--muted); margin: 0 0 4px; max-width: 760px; }
+  .sub { color: var(--faint); margin: 0 0 20px; max-width: 760px; }
+  .note { color: var(--label); font-size: 13px; }
+  .mono { font-family: var(--mono); font-size: 13px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .g3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .panel { background: var(--panel); border: 1px solid var(--b); border-radius: 12px; padding: 18px; }
+  .pill { display: inline-block; font: 500 11px/1 var(--mono); padding: 5px 8px; border-radius: 999px; border: 1px solid var(--b-strong); color: var(--dim); }
+  .pill.brass { background: var(--brass); color: var(--brass-ink); border-color: var(--brass); }
+  .pill.sage { background: var(--sage-bg); color: var(--sage); border-color: #315f3a; }
+  ul.tight { margin: 6px 0 0; padding-left: 18px; } ul.tight li { margin: 3px 0; color: var(--muted); }
+  svg text { font-family: var(--sans); }
+
+  /* --- direction cards --- */
+  .dir { position: relative; }
+  .dir.rec { border-color: var(--brass); box-shadow: 0 0 0 1px var(--brass) inset; }
+  .dir .tag { position: absolute; top: -10px; right: 14px; }
+  .kv { display: grid; grid-template-columns: 70px 1fr; gap: 4px 10px; font-size: 13px; margin-top: 10px; }
+  .kv dt { color: var(--label); } .kv dd { margin: 0; color: var(--muted); }
+
+  /* --- Kun lens --- */
+  .lens { border-left: 3px solid var(--brass); padding: 10px 14px; background: var(--amber-bg); border-radius: 0 10px 10px 0; }
+  .lens b { color: var(--brass); font-weight: 600; }
+
+  /* --- prototype board --- */
+  .proto { background: #f4efe4; color: #1b1a17; border-radius: 12px; padding: 16px; border: 1px solid var(--b); }
+  .proto-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 13px; color: #5b5547; }
+  .proto-head .stat { font-family: var(--mono); }
+  .board { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .card { background: #fffdf8; border: 1px solid #ddd3bf; border-radius: 10px; padding: 12px 12px 10px; position: relative; transition: box-shadow .3s; }
+  .card .kind { font: 500 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #8a7f68; }
+  .card h4 { margin: 6px 0 4px; font: 600 15px/1.3 var(--sans); }
+  .card p { margin: 0; font-size: 13px; color: #3b382f; }
+  .card .opts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .card .opts span { font-size: 12px; border: 1px solid #d6cbb3; border-radius: 6px; padding: 2px 7px; background: #faf5ea; }
+  .card .cbar { display: flex; gap: 6px; margin-top: 10px; }
+  .card button.c { font: 500 12px var(--sans); border: 1px solid #cbbfa6; background: #fff; border-radius: 6px; padding: 4px 8px; cursor: pointer; color: #3b382f; }
+  .card button.c:hover { background: #f7efdc; }
+  .card .cbox { display: none; margin-top: 8px; }
+  .card.open .cbox { display: block; }
+  .card textarea { width: 100%; min-height: 52px; font: 13px var(--sans); border: 1px solid #cbbfa6; border-radius: 6px; padding: 6px; resize: vertical; }
+  .card .quick { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .card .quick button { font: 500 11px var(--mono); border: 1px dashed #b9ab8c; background: transparent; border-radius: 5px; padding: 3px 6px; cursor: pointer; color: #5b5547; }
+  .card.busy::after { content: "agent rewriting this card…"; position: absolute; inset: 0; border-radius: 10px; display: grid; place-items: center; font: 500 12px var(--mono); color: #5b5547;
+    background: linear-gradient(100deg, rgba(255,253,248,.75) 30%, rgba(244,201,93,.35) 50%, rgba(255,253,248,.75) 70%); background-size: 300% 100%; animation: shimmer 1.1s linear infinite; }
+  .card.fresh { box-shadow: 0 0 0 3px #f4c95d; }
+  .card .thread { margin-top: 8px; border-top: 1px dashed #ddd3bf; padding-top: 6px; font-size: 12px; color: #6b6452; }
+  .card .thread div { margin: 2px 0; }
+  .card .who { font-family: var(--mono); color: #8a7f68; }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: -200% 0; } }
+
+  /* --- decisions --- */
+  form.q { background: var(--panel); border: 1px solid var(--b); border-radius: 12px; padding: 16px 18px; }
+  form.q legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
+  form.q fieldset { border: 0; padding: 0; margin: 0; }
+  form.q label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+  form.q label:hover { background: var(--elev); }
+  form.q input[type=radio], form.q input[type=checkbox] { margin-top: 4px; accent-color: var(--brass); }
+  form.q label small { display: block; color: var(--label); font-size: 12.5px; }
+  form.q textarea { width: 100%; background: var(--bg); color: var(--fg); border: 1px solid var(--b); border-radius: 8px; padding: 8px; font: 14px var(--sans); margin-top: 6px; }
+  .qa { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .btn { font: 600 13px var(--sans); background: var(--brass); color: var(--brass-ink); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+  .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--b-strong); }
+  .qs { font-size: 12px; color: var(--label); }
+  .qs.ok { color: var(--sage); }
+
+  table.t { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.t th, table.t td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--b-subtle); vertical-align: top; }
+  table.t th { color: var(--label); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  table.t td:first-child { color: var(--fg); font-weight: 500; white-space: nowrap; }
+  table.t td { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <script type="application/json" data-lavish-revisions>
+  [{ "id": "r2", "label": "Round 2", "timestamp": "2026-11-09T18:00:00Z", "summary": "Only the facilitator edits" },
+   { "id": "r3", "label": "Round 3", "timestamp": "2026-11-09T18:20:00Z", "summary": "Room watches the facilitator's shared screen; no sync or viewer link in scope" },
+   { "id": "r4", "label": "Round 4", "timestamp": "2026-11-09T18:45:00Z", "summary": "Direction B chosen; restricted HTML on the page, TOON on the wire to the agent" }]
+  </script>
+  <span class="pill brass">PLAN · DRAFT 4</span> <span class="pill">reviewing with Kun's lens</span>
+  <h1>Make Lavish feel instant</h1>
+  <p class="lede">A comment on one card should change that card within seconds, while a room full of people watches.</p>
+  <p class="sub">Source: <span class="mono">kunchenguid/lavish-axi</span>. I read the README, VISION.md and the reload path in the code. I haven't run or measured it, so every timing below is an estimate until step 0.</p>
+</header>
+
+<!-- ============ 1. WHERE THE TIME GOES ============ -->
+<h2>1 · Where the time goes today</h2>
+<p class="sub">Lavish itself is quick. The slow part is the agent rewriting the whole file to change one sentence.</p>
+<div class="panel">
+  <svg viewBox="0 0 960 230" role="img" aria-label="Estimated latency breakdown: agent regeneration dominates">
+    <text x="0" y="22" fill="#aeb6c6" font-size="13">Today: one round of feedback (estimate)</text>
+    <!-- poll pickup -->
+    <rect x="0" y="36" width="30" height="44" rx="4" fill="#3c4557"/>
+    <!-- agent read/think -->
+    <rect x="32" y="36" width="150" height="44" rx="4" fill="#5d4d1b"/>
+    <text x="107" y="63" text-anchor="middle" fill="#f7f3ea" font-size="12">agent reads + plans</text>
+    <!-- regen -->
+    <rect x="184" y="36" width="700" height="44" rx="4" fill="#f06464"/>
+    <text x="534" y="63" text-anchor="middle" fill="#17130a" font-size="13" font-weight="600">agent rewrites the ENTIRE file · html + css + js · ~10–20k tokens</text>
+    <!-- reload -->
+    <rect x="886" y="36" width="40" height="44" rx="4" fill="#8fe39e"/>
+    <text x="906" y="100" text-anchor="middle" fill="#8fe39e" font-size="11">reload</text>
+    <text x="906" y="114" text-anchor="middle" fill="#8fe39e" font-size="11">~1s</text>
+    <text x="0" y="100" fill="#8c96aa" font-size="11">poll</text>
+    <text x="534" y="100" text-anchor="middle" fill="#f06464" font-size="11">~1–4 min at typical output speeds</text>
+
+    <text x="0" y="150" fill="#aeb6c6" font-size="13">Proposed: comment on one card</text>
+    <rect x="0" y="164" width="30" height="44" rx="4" fill="#3c4557"/>
+    <rect x="32" y="164" width="60" height="44" rx="4" fill="#5d4d1b"/>
+    <rect x="94" y="164" width="70" height="44" rx="4" fill="#f4c95d"/>
+    <rect x="166" y="164" width="14" height="44" rx="3" fill="#8fe39e"/>
+    <text x="200" y="182" fill="#f4c95d" font-size="13" font-weight="600">patch only card #c7 · ~300 tokens · streamed in place</text>
+    <text x="200" y="200" fill="#8c96aa" font-size="12">no iframe reload · no layout gate · other cards untouched · ~3–8s</text>
+  </svg>
+  <p class="note">Code receipts: the server waits 100 ms after a save (<span class="mono">RELOAD_DEBOUNCE_MS</span>, <span class="mono">server.js:147</span>), then the chrome reloads the whole iframe by changing <span class="mono">frame.src</span> (<span class="mono">chrome-client.js:3487</span>). A layout gate masks the page until fonts load and the audit finishes.</p>
+</div>
+
+<!-- ============ 2. THE LOOP ============ -->
+<h2>2 · The loop, before and after</h2>
+<div class="panel">
+  <svg viewBox="0 0 960 300" role="img" aria-label="Before: whole-file loop. After: card-scoped patch loop with many participants.">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#8c96aa"/></marker>
+      <marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#f4c95d"/></marker>
+    </defs>
+    <text x="0" y="20" fill="#f06464" font-size="12" font-weight="600" letter-spacing="1.5">BEFORE</text>
+    <g font-size="13" fill="#f7f3ea">
+      <rect x="0" y="34" width="150" height="54" rx="8" fill="#1c212b" stroke="#303745"/><text x="75" y="58" text-anchor="middle">1 reviewer</text><text x="75" y="76" text-anchor="middle" fill="#8c96aa" font-size="11">annotates</text>
+      <rect x="200" y="34" width="150" height="54" rx="8" fill="#1c212b" stroke="#303745"/><text x="275" y="58" text-anchor="middle">poll → agent</text><text x="275" y="76" text-anchor="middle" fill="#8c96aa" font-size="11">re-reads whole file</text>
+      <rect x="400" y="34" width="190" height="54" rx="8" fill="#2a1717" stroke="#f06464"/><text x="495" y="58" text-anchor="middle">rewrite artifact.html</text><text x="495" y="76" text-anchor="middle" fill="#f06464" font-size="11">all cards, all css, all js</text>
+      <rect x="640" y="34" width="150" height="54" rx="8" fill="#1c212b" stroke="#303745"/><text x="715" y="58" text-anchor="middle">fs watch</text><text x="715" y="76" text-anchor="middle" fill="#8c96aa" font-size="11">100ms debounce</text>
+      <rect x="820" y="34" width="140" height="54" rx="8" fill="#1c212b" stroke="#303745"/><text x="890" y="58" text-anchor="middle">full reload</text><text x="890" y="76" text-anchor="middle" fill="#8c96aa" font-size="11">gate + audit</text>
+    </g>
+    <g stroke="#8c96aa" stroke-width="1.5" marker-end="url(#ar)"><line x1="150" y1="61" x2="198" y2="61"/><line x1="350" y1="61" x2="398" y2="61"/><line x1="590" y1="61" x2="638" y2="61"/><line x1="790" y1="61" x2="818" y2="61"/></g>
+
+    <text x="0" y="140" fill="#f4c95d" font-size="12" font-weight="600" letter-spacing="1.5">AFTER · ONE WRITER</text>
+    <g font-size="13" fill="#f7f3ea" data-lavish-revision="r3">
+      <rect x="0" y="154" width="190" height="56" rx="8" fill="#25230f" stroke="#f4c95d"/><text x="95" y="178" text-anchor="middle">you (facilitator)</text><text x="95" y="196" text-anchor="middle" fill="#f4c95d" font-size="11">the only one who edits</text>
+      <rect x="250" y="154" width="200" height="56" rx="8" fill="#25230f" stroke="#f4c95d"/><text x="350" y="178" text-anchor="middle">agent gets card #c7</text><text x="350" y="196" text-anchor="middle" fill="#f4c95d" font-size="11">+ your note + 1-line brief</text>
+      <rect x="510" y="154" width="230" height="56" rx="8" fill="#172419" stroke="#8fe39e"/><text x="625" y="178" text-anchor="middle">patch #c7 in place</text><text x="625" y="196" text-anchor="middle" fill="#8fe39e" font-size="11">DOM swap · diff glow · file saved</text>
+      <rect x="800" y="154" width="160" height="56" rx="8" fill="#1c212b" stroke="#303745"/><text x="880" y="178" text-anchor="middle">your shared screen</text><text x="880" y="196" text-anchor="middle" fill="#8c96aa" font-size="11">the room watches</text>
+      <text x="0" y="250" fill="#8c96aa" font-size="12">Participants talk out loud; you turn what they say into card notes.</text>
+      <text x="0" y="268" fill="#8c96aa" font-size="12">One screen, one writer: no sync, no relay, no merging.</text>
+    </g>
+    <g stroke="#f4c95d" stroke-width="1.5" marker-end="url(#arb)" fill="none"><line x1="190" y1="182" x2="248" y2="182"/><line x1="450" y1="182" x2="508" y2="182"/><line x1="740" y1="182" x2="798" y2="182"/></g>
+  </svg>
+</div>
+
+<!-- ============ 3. PROTOTYPE ============ -->
+<h2>3 · Try it: card-level patching</h2>
+<p class="sub">This is a fake agent with canned rewrites, so it shows what the interaction would feel like, not how fast a real model is. Comment on a card or press a quick action. Only that card changes, and the clock shows the page never reloads.</p>
+<div class="proto" id="proto">
+  <div class="proto-head">
+    <span>Board · <b>Q3 onboarding redesign</b> · shared screen</span>
+    <span class="stat">page alive <span id="clock">0.0</span>s · bytes rewritten <b id="bytes">0</b> / <span id="total">—</span></span>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="proto-head" style="margin:12px 0 0" data-lavish-revision="r4">
+    <span>Last agent patch on the wire</span>
+    <span class="stat">TOON <b id="toonN">0</b> chars · same card as HTML <span id="htmlN">0</span> chars</span>
+  </div>
+</div>
+<p class="note">The quick actions (Shorter, +Option, Split) are the kind of change a rigid template could handle with plain code and no model call, which is effectively instant.</p>
+
+<!-- ============ 4. FILE ANATOMY ============ -->
+<h2>4 · One file that carries its context</h2>
+<div class="grid g2">
+  <div class="panel">
+    <svg viewBox="0 0 440 300" role="img" aria-label="Anatomy of a self-contained board file">
+      <rect x="10" y="10" width="420" height="280" rx="12" fill="#11141a" stroke="#3c4557"/>
+      <text x="26" y="36" fill="#8c96aa" font-size="12" font-family="Geist Mono, monospace">board.html</text>
+      <rect x="26" y="50" width="388" height="58" rx="8" fill="#1c212b" stroke="#303745"/>
+      <text x="40" y="74" fill="#f7f3ea" font-size="14" font-weight="600">runtime · fixed, written once</text>
+      <text x="40" y="94" fill="#8c96aa" font-size="12">~8 KB css+js · card types · patch · save</text>
+      <rect x="26" y="118" width="388" height="58" rx="8" fill="#25230f" stroke="#f4c95d"/>
+      <g data-lavish-revision="r4">
+      <text x="40" y="142" fill="#f4c95d" font-size="14" font-weight="600">cards · restricted HTML, fixed tags</text>
+      <text x="40" y="162" fill="#d8deea" font-size="12">agent sends TOON · CLI converts to &lt;section data-card&gt;</text>
+      </g>
+      <rect x="26" y="186" width="388" height="88" rx="8" fill="#172419" stroke="#315f3a"/>
+      <text x="40" y="210" fill="#8fe39e" font-size="14" font-weight="600">context · script type=application/json</text>
+      <text x="40" y="230" fill="#d8deea" font-size="12">brief · threads · decisions · revisions</text>
+      <text x="40" y="248" fill="#d8deea" font-size="12">participants · patch protocol for any agent</text>
+      <text x="40" y="266" fill="#8c96aa" font-size="12">→ open in any agent and keep going</text>
+    </svg>
+  </div>
+  <div class="panel">
+    <h3>Why this shape</h3>
+    <ul class="tight">
+      <li>It stays <b>one portable file</b>, which is what you like most about Lavish. The runtime is inlined, not loaded from a CDN.</li>
+      <li data-lavish-revision="r4">The agent never writes CSS, JS or even HTML again. It reads and writes one card as a few lines of TOON; the CLI turns that into fixed-tag HTML.</li>
+      <li><b>Save</b> writes the live state back into the file, TiddlyWiki-style, so a file you mail to someone carries the whole discussion.</li>
+      <li>The context block is the agent's memory. A fresh session reads that block instead of the chat transcript.</li>
+      <li data-lavish-revision="r2">The facilitator is the only writer, so the file on disk always has exactly one author.</li>
+      <li>Card ids are stable, so threads, revisions and undo all hang off <span class="mono">data-card</span>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 4b. WIRE FORMAT ============ -->
+<h2 data-lavish-revision="r4">4b · TOON on the wire, HTML on the page</h2>
+<p class="sub">The file keeps restricted HTML, so it still reads fine with JavaScript off. The agent never sees that HTML. Because the tag set is fixed, the CLI converts a card both ways with plain code, and the model only handles the compact form.</p>
+<div class="grid g2" data-lavish-revision="r4">
+  <div class="panel">
+    <h3>Agent sees and writes (TOON)</h3>
+<pre class="mono" style="margin:8px 0 0;white-space:pre-wrap;color:var(--muted)">c2 decision
+title: How do we collect setup data?
+body: Three options on the table.
+opts[3]: Long form up front,Progressive wizard,Import from CSV</pre>
+    <p class="note" style="margin-top:10px">About 150 characters. The same shape as the lists <span class="mono">lavish-axi poll</span> already prints, such as <span class="mono">prompts[3]{uid,prompt,…}</span>.</p>
+  </div>
+  <div class="panel">
+    <h3>File stores (restricted HTML)</h3>
+<pre class="mono" style="margin:8px 0 0;white-space:pre-wrap;color:var(--muted)">&lt;section data-card="c2" data-kind="decision"&gt;
+  &lt;h4&gt;How do we collect setup data?&lt;/h4&gt;
+  &lt;p&gt;Three options on the table.&lt;/p&gt;
+  &lt;ul class="opts"&gt;&lt;li&gt;Long form up front&lt;/li&gt;
+    &lt;li&gt;Progressive wizard&lt;/li&gt;&lt;li&gt;Import from CSV&lt;/li&gt;&lt;/ul&gt;
+&lt;/section&gt;</pre>
+    <p class="note" style="margin-top:10px">About 250 characters, written by the CLI, never by the model.</p>
+  </div>
+</div>
+<div class="grid g2" style="margin-top:16px" data-lavish-revision="r4">
+  <div class="lens"><b>What it buys.</b> Roughly 30–45% fewer output tokens per card, plus fewer ways to break the page: the model can't emit a stray tag or class. The prototype above counts both sizes on every agent patch.</div>
+  <div class="lens"><b>Keep the gain in proportion.</b> Card-scoped patching is the big win, cutting a round from ~15k tokens to ~300. TOON trims that ~300 to ~200, so it's worth having but secondary. Measure tokens and parse failures for both formats in step 2 before locking it in.</div>
+</div>
+
+<!-- ============ 5. DIRECTIONS ============ -->
+<h2>5 · Direction: B, fork as a board tool</h2>
+<p class="sub" data-lavish-revision="r4">You chose B. A and C stay here for the record.</p>
+<div class="grid g3">
+  <div class="panel dir" style="opacity:.6">
+    <span class="pill">A</span>
+    <h3 style="margin-top:8px">Patch upstream Lavish</h3>
+    <p class="note">Add <span class="mono">lavish-axi patch &lt;file&gt; --card c7</span> and a no-reload DOM swap.</p>
+    <dl class="kv"><dt>Speed</dt><dd>Big win on single edits</dd><dt>Room</dt><dd data-lavish-revision="r3">Works on a shared screen as-is</dd><dt>Templates</dt><dd>Conflicts with "design is chosen, never defaulted"</dd><dt>Cost</dt><dd>Low, but the PR may be rejected</dd></dl>
+  </div>
+  <div class="panel dir rec">
+    <span class="pill brass tag" data-lavish-revision="r4">CHOSEN</span>
+    <span class="pill">B</span>
+    <h3 style="margin-top:8px">Fork as a board tool</h3>
+    <p class="note">Keep the parts of Lavish that work (AXI CLI, long poll, receipts, file-path identity). Drop the iframe reload, layout gate, whiteboard and share code.</p>
+    <dl class="kv"><dt>Speed</dt><dd>Card patches, streaming, no-model quick actions</dd><dt>Room</dt><dd data-lavish-revision="r3">You edit on a shared screen</dd><dt>Templates</dt><dd>Rigid card set by design</dd><dt>Cost</dt><dd data-lavish-revision="r3">Low to medium. A small new runtime; no relay</dd></dl>
+  </div>
+  <div class="panel dir" style="opacity:.6">
+    <span class="pill">C</span>
+    <h3 style="margin-top:8px">New stack from scratch</h3>
+    <p class="note">Yjs CRDT, a hosted server, an agent SDK process.</p>
+    <dl class="kv"><dt>Speed</dt><dd>Same as B. Speed comes from patching less, not from the stack</dd><dt>Room</dt><dd>Built for many synced editors, which is out of scope</dd><dt>Templates</dt><dd>Any</dd><dt>Cost</dt><dd>High. Puts the single-file property at risk</dd></dl>
+  </div>
+</div>
+
+<!-- ============ 6. KUN LENS ============ -->
+<h2>6 · Kun's lens on this plan</h2>
+<div class="grid g2">
+  <div class="lens"><b>Receipts, not vibes.</b> Measure stock Lavish first (comment → visible, split into agent time and reload time). The plan rests on the claim that agent regeneration dominates, so prove that before building anything.</div>
+  <div class="lens"><b>Narrow prototype first.</b> Build one board, one card swap and a fake agent before anything else. If card patching doesn't feel instant with a fake agent, nothing else will fix it.</div>
+  <div class="lens"><b>Pick the model by task shape.</b> A card rewrite is small and well defined, so a fast cheap model fits. Use a premium model only to create a board. Choose per task, not with a request router.</div>
+  <div class="lens"><b>Deterministic where you can.</b> Shorter, +Option, Split and Reorder are plain code, not LLM calls. Mix code, cheap judgment and occasional generation.</div>
+  <div class="lens"><b>Agent ergonomics are the product.</b> <span class="mono">board patch c7</span> should give compact output and next-step hints, the AXI way. Don't make the agent re-read the board to edit one card.</div>
+  <div class="lens"><b>Guardrails early.</b> Cap files at about 1000 lines from day one, and make an end-to-end latency test (comment → visible &lt; N s) the gate, not unit tests the agent wrote.</div>
+</div>
+
+<!-- ============ 7. PHASES ============ -->
+<h2>7 · Phases</h2>
+<div class="panel">
+  <table class="t">
+    <tr><th>#</th><th>What</th><th>Done when</th></tr>
+    <tr><td>0 · Measure</td><td>Time stock Lavish on a realistic board: 3 edits, split into agent time and reload time.</td><td>A table of real numbers that confirms or kills the premise.</td></tr>
+    <tr><td>1 · Runtime</td><td>A single-file board with about 8 card types, in-place card swap, a context JSON block and Save.</td><td>The prototype above, with a real file on disk.</td></tr>
+    <tr data-lavish-revision="r4"><td>2 · Agent patch</td><td><span class="mono">board poll</span> returns the card as TOON with the comment, and <span class="mono">board patch c7</span> takes TOON back and writes HTML. Run 20 real edits in TOON and in HTML.</td><td>e2e test: comment → visible under 8s with a fast model, plus a token and parse-failure table for the two formats.</td></tr>
+    <tr data-lavish-revision="r3"><td>3 · Meeting-ready</td><td>No-model quick actions, per-card undo, diff glow that is visible over a screen share, projector-size type, export.</td><td>A real meeting run on it, from one shared screen.</td></tr>
+  </table>
+</div>
+
+<!-- ============ 8. RISKS ============ -->
+<h2>8 · Risks</h2>
+<div class="grid g3">
+  <div class="panel"><h3>Cross-card edits</h3><p class="note">"Make all options cheaper" touches 5 cards. Needs a multi-card patch, or fall back to a board rewrite.</p></div>
+  <div class="panel"><h3>Rigidity bites</h3><p class="note">A fixed card set can't express a one-off diagram. Allow a <span class="mono">kind="html"</span> card as the escape hatch, still edited one card at a time.</p></div>
+  <div class="panel" data-lavish-revision="r2"><h3>Overlapping patches</h3><p class="note">With one writer, the only race is you sending a second note on a card before the first patch lands. Queue patches per card.</p></div>
+  <div class="panel" data-lavish-revision="r3"><h3>Readable over screen share</h3><p class="note">Video calls blur small text and compress subtle colour. Cards need large type, and the "this changed" glow must be bold enough to survive compression.</p></div>
+  <div class="panel"><h3>Losing upstream</h3><p class="note">A fork misses Lavish's fixes. Keep the shared AXI pieces small enough to re-port.</p></div>
+  <div class="panel"><h3>Context bloat</h3><p class="note">The embedded threads grow forever. Compact old resolved threads into the brief.</p></div>
+  <div class="panel" data-lavish-revision="r4"><h3>TOON slips</h3><p class="note">Models have seen far less TOON than HTML. Commas inside text, or a wrong <span class="mono">[n]</span> count, will happen. A strict parser rejects the patch with a one-line error and the agent retries, and the old card stays on screen meanwhile.</p></div>
+  <div class="panel" data-lavish-revision="r4"><h3>Escape-hatch cards</h3><p class="note">A <span class="mono">kind="html"</span> card has no TOON shape. It travels as raw HTML in one field, so it costs more and that's acceptable for rare cards.</p></div>
+</div>
+
+<!-- ============ 9. DECISIONS ============ -->
+<h2>9 · Decide these with me</h2>
+<p class="sub">Pick an answer, then queue it. Nothing is sent until you press Send to Agent.</p>
+<div class="grid g2">
+
+  <form class="q" data-lavish-question="approve" data-lavish-revision="r4" onsubmit="return queueAnswer(event,'approve','Plan')">
+    <fieldset><legend>Is the plan ready to start?</legend>
+      <label><input type="radio" name="v" value="Approved, start step 0 (measure stock Lavish)"><span>Approved, start step 0<small>Measure stock Lavish first</small></span></label>
+      <label><input type="radio" name="v" value="Approved, skip measuring and start step 1 (runtime)"><span>Approved, skip to step 1<small>You already know it's slow; build the runtime</small></span></label>
+      <label><input type="radio" name="v" value="Not yet, see my note"><span>Not yet<small>Add a note below</small></span></label>
+    </fieldset>
+    <div class="qa"><button class="btn" type="submit">Queue answer</button><span class="qs"></span></div>
+  </form>
+
+  <form class="q" data-lavish-question="next" onsubmit="return queueAnswer(event,'next','Next step')">
+    <fieldset><legend>Anything else to add, cut or change?</legend>
+      <textarea name="v" rows="3" placeholder="e.g. skip measuring, I already know it's slow / add voting / must work offline…"></textarea>
+    </fieldset>
+    <div class="qa"><button class="btn" type="submit">Queue note</button><span class="qs"></span></div>
+  </form>
+</div>
+
+<div class="qa" style="margin-top:16px">
+  <button type="button" class="btn ghost" onclick="copyAll(this)">Copy all answers</button>
+  <span class="qs" id="copystatus">For when this file is opened without Lavish running. It copies your answers to paste into chat.</span>
+</div>
+
+</main>
+
+<script>
+/* ---------- decisions ---------- */
+function queueAnswer(ev, key, label) {
+  ev.preventDefault();
+  const form = ev.currentTarget;
+  const val = (new FormData(form).get('v') || '').toString().trim();
+  const status = form.querySelector('.qs');
+  if (!val) { status.textContent = 'Pick or type something first.'; status.className = 'qs'; return false; }
+  if (window.lavish?.queuePrompt) {
+    window.lavish.queuePrompt(label + ': ' + val, { tag: 'choice', text: label + ': ' + val, element: form, queueKey: key, data: { question: key, answer: val } });
+    status.textContent = 'Queued. Press Send to Agent when ready.'; status.className = 'qs ok';
+  } else {
+    status.textContent = 'Selected (Lavish is not running; use Copy all answers).'; status.className = 'qs ok';
+  }
+  return false;
+}
+async function copyAll(btn) {
+  const out = [...document.querySelectorAll('form[data-lavish-question]')].map(f => {
+    const v = (new FormData(f).get('v') || '').toString().trim();
+    return f.querySelector('legend').textContent + ' → ' + (v || '(no answer)');
+  }).join('\n');
+  const s = document.getElementById('copystatus');
+  try { await navigator.clipboard.writeText(out); s.textContent = 'Copied ' + out.split('\n').length + ' answers.'; s.className = 'qs ok'; }
+  catch { s.textContent = out; }
+}
+
+/* ---------- prototype: fake agent, card-scoped patches ---------- */
+const cards = [
+  { id: 'c1', kind: 'goal', title: 'Cut time-to-first-value', body: 'New users should reach a working dashboard in under 5 minutes, without a sales call.' },
+  { id: 'c2', kind: 'decision', title: 'How do we collect setup data?', body: 'Three options on the table.', opts: ['Long form up front', 'Progressive wizard', 'Import from CSV'] },
+  { id: 'c3', kind: 'risk', title: 'Enterprise SSO users skip the wizard', body: 'About a third of seats arrive by SSO and never see onboarding at all, so the redesign misses them.' },
+  { id: 'c4', kind: 'metric', title: 'Activation: 41% → 60%', body: 'Measured as a dashboard with at least one live data source within 7 days of signup.' },
+];
+const rewrites = {
+  shorter: c => ({ ...c, body: c.body.split(/[.,;]/)[0].trim() + '.' }),
+  option: c => ({ ...c, kind: c.opts ? c.kind : 'decision', opts: [...(c.opts || []), ['Template gallery', 'Guided demo data', 'Ask in chat'][(c.opts || []).length % 3]] }),
+  split: c => ({ ...c, title: c.title + ' (part 1)', body: c.body.split('.')[0] + '. Part 2 moved to a new card.' }),
+  agent: (c, text) => ({ ...c, title: c.title.replace(/\s*\(rev \d+\)$/, '') + ' (rev ' + ((c.rev || 0) + 1) + ')', rev: (c.rev || 0) + 1,
+    body: 'Revised to address: "' + text.slice(0, 80) + '". ' + c.body.split('.')[0] + '.' }),
+};
+const threads = {};
+function esc(s) { return s.replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
+function cardHTML(c) {
+  const t = threads[c.id] || [];
+  return `<div class="kind">${c.kind} · #${c.id}</div><h4>${esc(c.title)}</h4><p>${esc(c.body)}</p>` +
+    (c.opts ? `<div class="opts">${c.opts.map(o => `<span>${esc(o)}</span>`).join('')}</div>` : '') +
+    `<div class="cbar"><button class="c" data-act="toggle">Comment</button></div>
+     <div class="cbox"><textarea placeholder="Tell the agent what to change on this card…"></textarea>
+     <div class="quick"><button data-act="send">Send ↵</button><button data-act="shorter">Shorter</button><button data-act="option">+Option</button><button data-act="split">Split</button></div></div>` +
+    (t.length ? `<div class="thread">${t.map(m => `<div><span class="who">${m.who}</span> ${esc(m.text)}</div>`).join('')}</div>` : '');
+}
+// what the agent would send vs what the CLI would write to the file
+function toToon(c) {
+  return `${c.id} ${c.kind}\ntitle: ${c.title}\nbody: ${c.body}` + (c.opts ? `\nopts[${c.opts.length}]: ${c.opts.join(',')}` : '');
+}
+function toHtml(c) {
+  return `<section data-card="${c.id}" data-kind="${c.kind}">\n  <h4>${esc(c.title)}</h4>\n  <p>${esc(c.body)}</p>` +
+    (c.opts ? `\n  <ul class="opts">${c.opts.map(o => `<li>${esc(o)}</li>`).join('')}</ul>` : '') + `\n</section>`;
+}
+const board = document.getElementById('board');
+function render() { board.innerHTML = cards.map(c => `<section class="card" data-card="${c.id}">${cardHTML(c)}</section>`).join(''); updTotal(); }
+function updTotal() { document.getElementById('total').textContent = board.innerHTML.length.toLocaleString(); }
+let rewritten = 0;
+function patch(id, fn, text, deterministic) {
+  const el = board.querySelector(`[data-card="${id}"]`);
+  const i = cards.findIndex(c => c.id === id);
+  (threads[id] ||= []).push({ who: 'you:', text: text || '[' + fn + ']' });
+  el.classList.remove('open'); el.classList.add('busy');
+  setTimeout(() => {
+    cards[i] = rewrites[fn](cards[i], text || '');
+    if (!deterministic) {
+      threads[id].push({ who: 'agent:', text: 'Updated this card only.' });
+      document.getElementById('toonN').textContent = toToon(cards[i]).length;
+      document.getElementById('htmlN').textContent = toHtml(cards[i]).length;
+    }
+    el.innerHTML = cardHTML(cards[i]);          // swap one node, nothing else
+    rewritten += el.outerHTML.length;
+    document.getElementById('bytes').textContent = rewritten.toLocaleString();
+    updTotal();
+    el.classList.remove('busy'); el.classList.add('fresh');
+    setTimeout(() => el.classList.remove('fresh'), 1400);
+  }, deterministic ? 120 : 1400);
+}
+board.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const el = b.closest('.card'); const id = el.dataset.card; const act = b.dataset.act;
+  if (act === 'toggle') { el.classList.toggle('open'); el.querySelector('textarea').focus(); return; }
+  if (act === 'send') { const v = el.querySelector('textarea').value.trim(); if (v) patch(id, 'agent', v, false); return; }
+  patch(id, act, '', true);
+});
+board.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && e.target.tagName === 'TEXTAREA') {
+    e.preventDefault(); const el = e.target.closest('.card'); const v = e.target.value.trim(); if (v) patch(el.dataset.card, 'agent', v, false);
+  }
+});
+render();
+const t0 = performance.now();
+setInterval(() => { document.getElementById('clock').textContent = ((performance.now() - t0) / 1000).toFixed(1); }, 100);
+</script>
+</body>
+</html>
