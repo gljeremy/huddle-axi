@@ -27,7 +27,7 @@ export const RULES = {
   },
   // Kind "html" is the escape hatch: any markup except these tags, on* handlers and unsafe URLs.
   blockedInHtml: ['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'link', 'meta', 'base', 'style', 'template', 'form', 'input', 'button', 'textarea', 'select', 'noscript', 'set', 'animate', 'animatecolor', 'animatemotion', 'animatetransform', 'discard', 'plaintext', 'xmp', 'listing', 'noembed', 'noframes'],
-  reservedDescendantAttrs: ['data-card', 'data-huddle-chrome'],
+  reservedDescendantAttrs: ['data-card', 'data-huddle-chrome', 'name'],
 };
 
 export function protocolText() {

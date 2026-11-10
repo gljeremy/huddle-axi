@@ -230,13 +230,13 @@ describe('patching a card', () => {
     assert.deepEqual(browser.errors, []);
   });
 
-  test('reserves descendant card and chrome markers across all card kinds and depths', async () => {
+  test('reserves descendant card markers and names across all card kinds and depths', async () => {
     const result = await browser.call(() => {
       const before = huddle.get('c1');
       const target = document.querySelector('[data-card="c5"]');
       const outcomes = [];
       for (const kind of ['goal', 'decision', 'risk', 'metric', 'idea', 'action', 'note', 'html']) {
-        for (const attr of ['data-card="c5"', 'data-huddle-chrome']) {
+        for (const attr of ['data-card="c5"', 'data-huddle-chrome', 'name="diagram"']) {
           for (const content of [`<p ${attr}>Important</p>`, `<ul><li><b ${attr}>Important</b></li></ul>`]) {
             try {
               huddle.patch(`<section data-card="c1" data-kind="${kind}"><h3>Diagram node</h3>${content}</section>`);
@@ -269,6 +269,52 @@ describe('patching a card', () => {
     assert.equal(result.title, 'Real decision');
     assert.match(result.notes, /Real note/);
     assert.deepEqual(result.ids, SAMPLE_IDS);
+  });
+
+  test('rejects Document-clobbering image names before mutation and preserves save/reopen', async () => {
+    for (const name of ['querySelector', 'createElement', 'documentElement', 'addEventListener', 'body', 'huddle', 'showSaveFilePicker', '']) {
+      await browser.open(sampleUrl);
+      const result = await browser.call((name) => {
+        const card = document.querySelector('[data-card="c16"]');
+        const before = huddle.get('c16');
+        let status;
+        try {
+          huddle.patch(`<section data-card="c16" data-kind="html"><img name="${name}" alt="Diagram"></section>`);
+          status = 'accepted';
+        } catch (err) {
+          status = err.name;
+        }
+        return {
+          status, unchanged: huddle.get('c16') === before,
+          sameNode: card === document.querySelector('[data-card="c16"]'),
+          dirty: huddle.dirty, revisions: huddle.context().revisions, saved: huddle.serialize(),
+        };
+      }, name);
+      assert.equal(result.status, 'HuddleError', name);
+      assert.equal(result.unchanged, true, name);
+      assert.equal(result.sameNode, true, name);
+      assert.equal(result.dirty, false, name);
+      assert.deepEqual(result.revisions, [], name);
+      const file = join(dir, 'rejected-document-name.html');
+      writeFileSync(file, result.saved);
+      await browser.open(pathToFileURL(file).href);
+      const reopened = await browser.call(() => {
+        huddle.patch('<section data-card="c16" data-kind="html"><div id="querySelector">Diagram</div></section>');
+        huddle.comment('c16', 'Still editable');
+        return {
+          ids: huddle.cards().map((c) => c.id), problems: huddle.problems,
+          text: document.querySelector('[data-card="c16"] [id="querySelector"]').textContent,
+          notes: huddle.context().threads.c16.map((n) => n.text),
+          toolbars: document.querySelectorAll('.huddle-toolbar').length,
+        };
+      });
+      assert.deepEqual(reopened.ids, SAMPLE_IDS);
+      assert.deepEqual(reopened.problems, []);
+      assert.equal(reopened.text, 'Diagram');
+      assert.deepEqual(reopened.notes, ['Still editable']);
+      assert.equal(reopened.toolbars, 1);
+      assert.deepEqual(browser.errors, []);
+    }
   });
 
   test('ordinary HTML data attributes and content survive decoration and save/reopen', async () => {
@@ -362,11 +408,10 @@ describe('facilitator notes', () => {
 });
 
 describe('saving', () => {
-  test('diagram IDs and names matching huddle survive save/reopen with a working API', async () => {
+  test('diagram IDs matching huddle survive save/reopen with a working API', async () => {
     const diagrams = [
       '<div id="huddle">Diagram</div>',
       '<div id="huddle">First node</div><div id="huddle">Second node</div>',
-      '<img name="huddle" alt="Diagram">',
     ];
     for (const [index, diagram] of diagrams.entries()) {
       await browser.open(sampleUrl);
@@ -385,7 +430,7 @@ describe('saving', () => {
           ids: huddle.cards().map((c) => c.id),
           title: document.querySelector('[data-card="c5"] h3').textContent,
           notes: huddle.context().threads.c16.map((n) => n.text),
-          diagramNodes: document.querySelectorAll('[data-card="c16"] [id="huddle"], [data-card="c16"] [name="huddle"]').length,
+          diagramNodes: document.querySelectorAll('[data-card="c16"] [id="huddle"]').length,
           toolbars: document.querySelectorAll('.huddle-toolbar').length,
           buttons: document.querySelectorAll('.huddle-save').length,
           problems: huddle.problems,
@@ -406,7 +451,6 @@ describe('saving', () => {
     const diagrams = [
       '<div id="showSaveFilePicker">Diagram</div>',
       '<div id="showSaveFilePicker">First node</div><div id="showSaveFilePicker">Second node</div>',
-      '<img name="showSaveFilePicker" alt="Diagram">',
     ];
     for (const [index, diagram] of diagrams.entries()) {
       await browser.open(sampleUrl);
@@ -426,7 +470,7 @@ describe('saving', () => {
         return {
           namedNodes, status, clicked, dirty: huddle.dirty,
           notes: JSON.parse(doc.querySelector('[data-huddle-context]').textContent).threads.c16.map((n) => n.text),
-          diagramNodes: doc.querySelectorAll('[data-card="c16"] [id="showSaveFilePicker"], [data-card="c16"] [name="showSaveFilePicker"]').length,
+          diagramNodes: doc.querySelectorAll('[data-card="c16"] [id="showSaveFilePicker"]').length,
         };
       }, diagram);
       assert.equal(result.namedNodes, index === 1 ? 2 : 1);
