@@ -77,6 +77,19 @@ options[2]{label,detail,votes,chosen}:
   );
 });
 
+test('unknown option and metadata columns are rejected at every model boundary', () => {
+  const cases = [
+    ['options', { label: 'Wizard', vote: 5, chosen: true }, 'options[0].vote', 'options[1]{label,detail,vote,chosen}:\n  Wizard,,5,true'],
+    ['meta', { key: 'owner', val: 'Alex' }, 'meta[0].val', 'meta[1]{key,val}:\n  owner,Alex'],
+  ];
+  for (const [field, row, name, table] of cases) {
+    const card = { id: 'c5', kind: 'decision', title: 'Choose', [field]: [row] };
+    const isUnknown = (err) => err instanceof CardError && err.message === `unknown field: ${name}`;
+    for (const convert of [normalizeCard, cardToToon, cardToHtml]) assert.throws(() => convert(card), isUnknown);
+    assert.throws(() => toonToCard(`id: c5\nkind: decision\ntitle: Choose\n${table}\n`), isUnknown);
+  }
+});
+
 test('a metric value with quotes is escaped in its attribute', () => {
   assert.match(cardToHtml({ id: 'm1', kind: 'metric', title: 'T', value: '5"&<' }), /<data value="5&quot;&amp;&lt;">5"&<<\/data>/);
 });

@@ -428,19 +428,28 @@
       const el = cardEl(JSON.parse(e.data).card);
       if (el) busy(el);
     });
+    events.addEventListener('snapshot', (e) => {
+      const { reqId, card, threadLength } = JSON.parse(e.data);
+      const el = cardEl(card);
+      const ack = el ? {
+        reqId, ok: true, model: toModel(el), html: get(card),
+        thread: (context.threads[card] ?? []).slice(0, threadLength).map(({ who, text }) => ({ who, text })),
+      } : { reqId, ok: false };
+      post('./ack', ack).catch((err) => console.error('huddle: could not answer the agent', err));
+    });
     // Apply, write the file, then answer, so the agent's patch call returns only once the change is on disk.
     events.addEventListener('patch', async (e) => {
       const { reqId, html, note } = JSON.parse(e.data);
       let ack;
       try {
         const card = patch(html, { by: 'agent', note });
-        let saved = false;
         try {
-          saved = (await save()) === 'saved';
+          await save();
         } catch (err) {
           renderToolbar(`save failed: ${err.message}`);
+          throw new Error(`the card changed on screen but saving failed: ${err.message}`);
         }
-        ack = { reqId, ok: true, card, saved };
+        ack = { reqId, ok: true, card };
       } catch (err) {
         ack = { reqId, ok: false, error: err.message };
       }

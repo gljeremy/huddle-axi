@@ -170,7 +170,7 @@ async function cmdPatch(path, flags) {
   const body = flags.cardFile ? readFileSync(resolve(flags.cardFile), 'utf8') : await readStdin();
   const state = await liveServer();
   const { card, saved } = await call(state, '/api/patch', { file: path, body, note: flags.note });
-  print({ patched: card, saved, ...(saved ? {} : { warning: 'the board changed but the file was not saved' }) });
+  print({ patched: card, saved });
   return 0;
 }
 

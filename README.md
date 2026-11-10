@@ -60,8 +60,10 @@ node src/cli.mjs poll my-board.html --out card.toon
 
 `poll` waits for the next note (8 minutes by default, `--timeout-ms` to change) and prints
 the note, the earlier notes on that card, the board's title and brief, and the card
-itself. With `--out`, the card goes to that file, ready for a targeted edit. A card looks
-like this:
+itself. At delivery it asks the browser for the current card, so queued notes include
+previous rewrites; if the browser does not answer within a second, it uses the snapshot
+captured when the note was submitted. With `--out`, the card goes to that file, ready
+for a targeted edit. A card looks like this:
 
 ```
 id: c5
@@ -90,7 +92,9 @@ node src/cli.mjs patch my-board.html --card-file card.toon --note "marked decide
 `patch` takes the edited card as TOON or as one `<section>`, from `--card-file` or
 stdin. It returns once the card has changed on screen and the file is saved. A bad card
 is refused with the reason (a TOON line number, or the card rule it breaks), and the
-board is left as it was. `node src/cli.mjs stop` stops the server.
+board is left as it was. If saving fails after applying a valid card, `patch` exits
+unsuccessfully with the save error and warns that the card already changed on screen.
+`node src/cli.mjs stop` stops the server.
 
 ## Page API
 

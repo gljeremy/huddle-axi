@@ -88,7 +88,7 @@ export function patchBodyToHtml(body) {
   }
 }
 
-export function startServer({ port = 0, token = randomBytes(16).toString('hex'), idleMs = IDLE_MS } = {}) {
+export function startServer({ token = randomBytes(16).toString('hex'), idleMs = IDLE_MS } = {}) {
   const sessions = new Map(); // id -> session
   const byFile = new Map(); // absolute path -> session
   let idleTimer;
@@ -117,14 +117,33 @@ export function startServer({ port = 0, token = randomBytes(16).toString('hex'),
     return true;
   }
 
+  async function snapshot(s, note) {
+    if (!s.clients.size) return note;
+    const reqId = s.nextReq++;
+    const fresh = await new Promise((ok) => {
+      const timer = setTimeout(() => {
+        s.acks.delete(reqId);
+        ok(null);
+      }, 1000);
+      s.acks.set(reqId, (ack) => {
+        clearTimeout(timer);
+        ok(ack.ok ? ack : null);
+      });
+      emit(s, 'snapshot', { reqId, card: note.card, threadLength: note.thread.length });
+    });
+    return fresh ? { ...note, model: fresh.model, html: fresh.html, thread: fresh.thread } : note;
+  }
+
   function deliver(s) {
     while (s.notes.length && s.pollers.length) {
       const poller = s.pollers.shift();
       if (poller.res.destroyed) continue;
       clearTimeout(poller.timer);
       const note = s.notes.shift();
-      send(poller.res, 200, { note });
-      emit(s, 'claimed', { card: note.card });
+      snapshot(s, note).then((current) => {
+        send(poller.res, 200, { note: current });
+        emit(s, 'claimed', { card: note.card });
+      });
     }
   }
 
@@ -167,7 +186,7 @@ export function startServer({ port = 0, token = randomBytes(16).toString('hex'),
           }, ACK_MS);
           s.acks.set(reqId, (ack) => {
             clearTimeout(timer);
-            ok(ack.ok ? { status: 200, body: { card: ack.card, saved: ack.saved === true } } : { status: 422, body: { error: String(ack.error) } });
+            ok(ack.ok ? { status: 200, body: { card: ack.card, saved: true } } : { status: 422, body: { error: String(ack.error) } });
           });
         });
         emit(s, 'patch', { reqId, html, note: typeof body.note === 'string' ? body.note : undefined });
@@ -261,13 +280,13 @@ export function startServer({ port = 0, token = randomBytes(16).toString('hex'),
     server.closeAllConnections?.();
   }
 
-  server.listen(port, '127.0.0.1');
+  server.listen(0, '127.0.0.1');
   return { server, token, stop };
 }
 
 // Run as the detached background server: listen, then publish where we are.
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
-  const { server, token } = startServer({ port: Number(process.env.HUDDLE_PORT) || 0 });
+  const { server, token } = startServer();
   server.on('listening', () => {
     mkdirSync(dirname(stateFile()), { recursive: true, mode: 0o700 });
     writeFileSync(stateFile(), JSON.stringify({ port: server.address().port, pid: process.pid, token }), { mode: 0o600 });

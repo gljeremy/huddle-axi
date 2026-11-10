@@ -71,7 +71,10 @@ export function normalizeCard(input) {
   if (input.options != null) {
     if (!Array.isArray(input.options)) throw new CardError('options must be a list');
     card.options = input.options.map((o, i) => {
-      if (o === null || typeof o !== 'object') throw new CardError(`options[${i}] must have label, detail, votes and chosen`);
+      if (o === null || typeof o !== 'object' || Array.isArray(o)) throw new CardError(`options[${i}] must have label, detail, votes and chosen`);
+      for (const key of Object.keys(o)) {
+        if (!['label', 'detail', 'votes', 'chosen'].includes(key)) throw new CardError(`unknown field: options[${i}].${key}`);
+      }
       const votes = o.votes ?? null;
       if (votes !== null && (!Number.isInteger(votes) || votes < 0 || votes > 9999)) throw new CardError(`options[${i}].votes must be a whole number or null`);
       if (o.chosen != null && typeof o.chosen !== 'boolean') throw new CardError(`options[${i}].chosen must be true or false`);
@@ -81,7 +84,10 @@ export function normalizeCard(input) {
   if (input.meta != null) {
     if (!Array.isArray(input.meta)) throw new CardError('meta must be a list');
     card.meta = input.meta.map((m, i) => {
-      if (m === null || typeof m !== 'object') throw new CardError(`meta[${i}] must have key and value`);
+      if (m === null || typeof m !== 'object' || Array.isArray(m)) throw new CardError(`meta[${i}] must have key and value`);
+      for (const key of Object.keys(m)) {
+        if (!['key', 'value'].includes(key)) throw new CardError(`unknown field: meta[${i}].${key}`);
+      }
       return { key: asText(m.key ?? '', `meta[${i}].key`), value: asText(m.value ?? '', `meta[${i}].value`) };
     });
   }

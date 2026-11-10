@@ -3,7 +3,7 @@
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -14,7 +14,7 @@ import { launchBrowser } from './helpers/chrome.mjs';
 const CLI = fileURLToPath(new URL('../src/cli.mjs', import.meta.url));
 const dir = mkdtempSync(join(tmpdir(), 'huddle-loop-'));
 // Keep this test's server apart from any real one on the machine.
-const env = { ...process.env, HUDDLE_STATE_DIR: join(dir, 'state') };
+const env = { ...process.env, HUDDLE_STATE_DIR: join(dir, 'state'), HUDDLE_PORT: '-1' };
 const board = join(dir, 'board.html');
 const squash = (html) => html.replace(/>\s+</g, '><').trim();
 
@@ -130,6 +130,42 @@ test('every sample card fits the card model and re-renders to the same markup', 
   cards.forEach(({ id, html }, k) => assert.equal(squash(reparsed[k]), squash(html), id));
 });
 
+test('queued notes receive the current browser card in both wire formats', async () => {
+  for (const format of ['toon', 'html']) {
+    const earlier = await browser.call((format) => {
+      const count = (huddle.context().threads.c5 ?? []).length;
+      const content = format === 'toon' ? '<p>Before</p>' : '<ul><li>Before</li></ul><p>After list</p>';
+      huddle.patch(`<section data-card="c5" data-kind="decision" data-status="open"><h3>Queued decision</h3>${content}</section>`);
+      huddle.comment('c5', 'Mark decided.');
+      huddle.comment('c5', 'Add the owner.');
+      return count;
+    }, format);
+    const first = await run(['poll', board, '--timeout-ms', '20000']);
+    assert.equal(first.status, 0, first.stderr);
+    const [firstHead] = first.stdout.split('\n---\n');
+    assert.equal(decode(firstHead).note, 'Mark decided.');
+    assert.equal(decode(firstHead).thread.length, earlier, 'later queued notes are not earlier context');
+    const content = format === 'toon' ? '<p>Decided</p>' : '<ul><li>Decided</li></ul><p>After list</p>';
+    const patched = await run(['patch', board], `<section data-card="c5" data-kind="decision" data-status="decided"><h3>Current decision</h3>${content}</section>`);
+    assert.equal(patched.status, 0, patched.stderr);
+    const second = await run(['poll', board, '--timeout-ms', '20000']);
+    assert.equal(second.status, 0, second.stderr);
+    const [head, card] = second.stdout.split('\n---\n');
+    const info = decode(head);
+    assert.equal(info.note, 'Add the owner.');
+    assert.equal(info.format, format);
+    assert.equal(info.thread.length, earlier + 1);
+    assert.deepEqual(info.thread.at(-1), { who: 'facilitator', text: 'Mark decided.' });
+    if (format === 'toon') {
+      assert.equal(decode(card).status, 'decided');
+      assert.equal(decode(card).title, 'Current decision');
+    } else {
+      assert.match(card, /data-status="decided"/);
+      assert.match(card, /<h3>Current decision<\/h3>/);
+    }
+  }
+});
+
 test('a card that does not fit the model is handed to the agent as HTML', async () => {
   await browser.call(() => huddle.patch('<section data-card="c13" data-kind="note"><h3>Live chat</h3><ul><li>one</li></ul><p>after the list</p></section>'));
   const polling = run(['poll', board, '--timeout-ms', '20000']);
@@ -153,6 +189,26 @@ test('a bad patch is refused with a reason the agent can fix, and nothing change
   assert.equal(missing.status, 1);
   assert.match(missing.stderr, /there is no card #c99/);
   assert.equal(await browser.call(() => huddle.get('c6')), before);
+});
+
+test('a save failure makes patch fail even though the card changed on screen', async () => {
+  await browser.call(() => huddle.save());
+  const backup = `${board}.backup`;
+  renameSync(board, backup);
+  mkdirSync(board);
+  try {
+    const result = await run(['patch', board], 'id: c6\nkind: note\ntitle: Visible but not saved');
+    assert.equal(result.status, 1, result.stdout);
+    assert.match(result.stderr, /card changed on screen but saving failed:/);
+    assert.match(result.stderr, /EISDIR|EPERM|EACCES|ENOTEMPTY/);
+    assert.equal(await browser.call(() => huddle.model('c6').title), 'Visible but not saved');
+    assert.doesNotMatch(readFileSync(backup, 'utf8'), /Visible but not saved/);
+    assert.equal(await browser.call(() => huddle.dirty), true);
+  } finally {
+    rmSync(board, { recursive: true, force: true });
+    renameSync(backup, board);
+    await browser.call(() => huddle.save());
+  }
 });
 
 test('poll times out cleanly when the facilitator is quiet', async () => {
@@ -185,6 +241,31 @@ test('the server only talks to its own clients', async () => {
   assert.equal(await hit('/api/health', { method: 'GET', headers: { authorization: `Bearer ${token}`, host: 'evil.example:80' } }), 421, 'other host names are refused');
   assert.equal(await hit(`/b/${id}/note`, { headers: { 'content-type': 'text/plain' }, body: '{"card":"c1","text":"x"}' }), 415, 'form-style posts are refused');
   assert.equal(await hit(`/b/${'0'.repeat(32)}/`, { method: 'GET' }), 404, 'unknown sessions are not served');
+});
+
+test('poll falls back to the queued snapshot when a browser does not answer', async () => {
+  const other = join(dir, 'unresponsive.html');
+  assert.equal(runSync('new', other).status, 0);
+  const opened = runSync('open', other, '--no-open');
+  assert.equal(opened.status, 0, opened.stderr);
+  const otherUrl = decode(opened.stdout).url;
+  const controller = new AbortController();
+  const stream = await fetch(`${otherUrl}events`, { signal: controller.signal });
+  try {
+    assert.equal(stream.status, 200);
+    const queued = await fetch(`${otherUrl}note`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ card: 'c1', text: 'Offline note', model: { id: 'c1', kind: 'note', title: 'Queued title' }, html: '<section data-card="c1" data-kind="note"><h3>Queued title</h3></section>' }),
+    });
+    assert.equal(queued.status, 200);
+    const result = await run(['poll', other, '--timeout-ms', '5000']);
+    assert.equal(result.status, 0, result.stderr);
+    const [head, card] = result.stdout.split('\n---\n');
+    assert.equal(decode(head).note, 'Offline note');
+    assert.equal(decode(card).title, 'Queued title');
+  } finally {
+    controller.abort();
+  }
 });
 
 test('stop shuts the server down', () => {
