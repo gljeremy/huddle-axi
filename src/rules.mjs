@@ -26,7 +26,7 @@ export const RULES = {
     href: '^(https?:|mailto:|#)',
   },
   // Kind "html" is the escape hatch: any markup except these tags, on* handlers and unsafe URLs.
-  blockedInHtml: ['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'link', 'meta', 'base', 'style', 'template', 'form', 'input', 'button', 'textarea', 'select', 'noscript'],
+  blockedInHtml: ['script', 'iframe', 'frame', 'frameset', 'object', 'embed', 'link', 'meta', 'base', 'style', 'template', 'form', 'input', 'button', 'textarea', 'select', 'noscript', 'set', 'animate', 'animatecolor', 'animatemotion', 'animatetransform', 'discard'],
 };
 
 export function protocolText() {
@@ -40,7 +40,7 @@ export function protocolText() {
     `Kinds: ${KINDS.join(', ')}.`,
     'Section attributes: data-card, data-kind, data-status (open|decided), data-severity (high|medium|low), data-progress (0-100).',
     `Inside every kind except html: exactly one h3 title as the first element, then only these tags: ${tags}. No class or style attributes. href must be http, https, mailto or #.`,
-    'Kind html is the escape hatch for diagrams and one-offs: any markup except script, iframe, object, embed, form controls and style blocks, with no on* attributes and no javascript: URLs.',
+    'Kind html is the escape hatch for diagrams and one-offs: no scripts, iframes, objects, embeds, form controls, style blocks, SVG animation or on* attributes. Direct URLs must be http, https, mailto, # or data:image; relative URLs, URL-list attributes (srcset, imagesrcset, ping) and CSS resources are not allowed.',
     'Context "threads" holds the facilitator\'s notes per card id. "revisions" logs every card change.',
     'Never edit the <style> or <script> blocks marked data-huddle-runtime.',
   ].join('\n');

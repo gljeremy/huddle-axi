@@ -154,55 +154,259 @@ describe('patching a card', () => {
     assert.equal(results.rect, true, 'the accepted diagram is not on the page');
   });
 
-  test('adds and removes cards', async () => {
+  test('html cards reject indirect and relative resource URLs without changing the card', async () => {
+    const bad = [
+      '<svg><a href="#"><text>Open</text><set attributeName="href" to="javascript:alert(1)"/></a></svg>',
+      '<img srcset="neighbour.png 1x">',
+      '<img src="neighbour.png">',
+      '<a href="javascript:alert(1)">Open</a>',
+      '<svg><image xlink:href="neighbour.svg"/></svg>',
+      '<svg xml:base="neighbour.svg"><image href="#x"/></svg>',
+      '<svg><a href="#"><animate attributeName="href" values="#;javascript:alert(1)"/></a></svg>',
+      '<p style="background-image:url(neighbour.png)">x</p>',
+      '<p style="background-image:image-set(\'neighbour.png\' 1x)">x</p>',
+      String.raw`<p style="background-image:u\72l(neighbour.png)">x</p>`,
+      '<p style="background-image:u/**/rl(neighbour.png)">x</p>',
+      ...['fill', 'stroke', 'filter', 'clip-path', 'mask', 'cursor', 'marker-start', 'marker-mid', 'marker-end']
+        .map((attr) => `<svg><rect ${attr}="url(neighbour.svg#x)"/></svg>`),
+      '<a href="#" ping="neighbour">Open</a>',
+      '<table background="neighbour.png"><tr><td>x</td></tr></table>',
+    ];
+    const result = await browser.call((cases) => {
+      const before = huddle.get('c16');
+      const outcomes = cases.map((html) => {
+        try {
+          huddle.patch(`<section data-card="c16" data-kind="html">${html}</section>`);
+          return 'accepted';
+        } catch (err) {
+          return err.name;
+        }
+      });
+      return { outcomes, unchanged: huddle.get('c16') === before, dirty: huddle.dirty, revisions: huddle.context().revisions };
+    }, bad);
+    bad.forEach((html, i) => assert.equal(result.outcomes[i], 'HuddleError', html));
+    assert.equal(result.unchanged, true);
+    assert.equal(result.dirty, false);
+    assert.deepEqual(result.revisions, []);
+  });
+
+  test('html cards retain the permitted direct URL schemes and inline diagram styling', async () => {
     const result = await browser.call(() => {
-      huddle.add('<section data-card="c20" data-kind="idea"><h3>Guided demo data</h3></section>', { lane: 'ideas' });
-      const added = huddle.cards().find((c) => c.id === 'c20');
-      let duplicate;
-      try {
-        huddle.add('<section data-card="c20" data-kind="idea"><h3>again</h3></section>');
-      } catch (err) {
-        duplicate = err.name;
-      }
-      huddle.remove('c13');
-      return { added, duplicate, ids: huddle.cards().map((c) => c.id), ops: huddle.context().revisions.map((r) => r.op) };
+      huddle.patch(`<section data-card="c16" data-kind="html">
+        <a href="http://example.com">HTTP</a><a href="https://example.com">HTTPS</a>
+        <a href="mailto:team@example.com">Mail</a><a href="#local">Local</a>
+        <img src="data:image/png;base64,iVBORw0KGgo=">
+        <svg><rect style="fill:gold" width="10" height="10"/></svg>
+      </section>`);
+      const card = document.querySelector('[data-card="c16"]');
+      return { urls: [...card.querySelectorAll('a')].map((a) => a.getAttribute('href')), fill: card.querySelector('rect').style.fill };
     });
-    assert.deepEqual(result.added, { id: 'c20', kind: 'idea', lane: 'ideas', title: 'Guided demo data' });
-    assert.equal(result.duplicate, 'HuddleError');
-    assert.equal(result.ids.includes('c13'), false);
-    assert.equal(result.ids.length, SAMPLE_IDS.length);
-    assert.deepEqual(result.ops, ['add', 'remove']);
+    assert.deepEqual(result.urls, ['http://example.com', 'https://example.com', 'mailto:team@example.com', '#local']);
+    assert.equal(result.fill, 'gold');
   });
 });
 
 describe('facilitator notes', () => {
   beforeEach(() => browser.open(sampleUrl));
 
-  test('a note typed on a card goes into the context and raises an event', async () => {
+  test('a note typed on a card goes into the context and is displayed', async () => {
     const result = await browser.call(() => {
-      const events = [];
-      window.addEventListener('huddle:comment', (e) => events.push(e.detail));
       const card = document.querySelector('[data-card="c7"]');
       card.querySelector('.huddle-note-btn').click();
       const box = card.querySelector('.huddle-note textarea');
       box.value = 'Sales eng wants the admin settings listed first';
       box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       return {
-        events,
         thread: huddle.context().threads.c7,
         shown: document.querySelector('[data-card="c7"] .huddle-thread')?.textContent ?? '',
         dirty: huddle.dirty,
       };
     });
-    assert.deepEqual(result.events.map((e) => [e.card, e.text, e.who]), [['c7', 'Sales eng wants the admin settings listed first', 'facilitator']]);
     assert.equal(result.thread.length, 1);
     assert.equal(result.thread[0].text, 'Sales eng wants the admin settings listed first');
     assert.match(result.shown, /Sales eng wants the admin settings listed first/);
     assert.equal(result.dirty, true);
   });
+
+  test('a valid constructor card ID supports notes, patching and save round-trips', async () => {
+    const initial = await browser.call(() => {
+      document.querySelector('[data-card="c7"]').dataset.card = 'constructor';
+      return huddle.serialize();
+    });
+    const file = join(dir, 'constructor.html');
+    writeFileSync(file, initial);
+    await browser.open(pathToFileURL(file).href);
+    const saved = await browser.call(() => {
+      huddle.comment('constructor', 'First note');
+      huddle.patch('<section data-card="constructor" data-kind="note"><h3>Special ID</h3></section>');
+      huddle.comment('constructor', 'Second note');
+      return huddle.serialize();
+    });
+    writeFileSync(file, saved);
+    await browser.open(pathToFileURL(file).href);
+    const result = await browser.call(() => ({
+      notes: huddle.context().threads.constructor.map((n) => n.text),
+      shown: document.querySelector('[data-card="constructor"] .huddle-thread').textContent,
+      problems: huddle.problems,
+    }));
+    assert.deepEqual(result.notes, ['First note', 'Second note']);
+    assert.match(result.shown, /First note/);
+    assert.match(result.shown, /Second note/);
+    assert.deepEqual(result.problems, []);
+    assert.deepEqual(browser.errors, []);
+  });
 });
 
 describe('saving', () => {
+  test('mutations during each asynchronous save stage remain unsaved', async () => {
+    for (const stage of ['picker', 'create', 'write', 'close']) {
+      await browser.open(sampleUrl);
+      const result = await browser.call(async (stage) => {
+        let release;
+        let reached;
+        const gate = new Promise((resolve) => { release = resolve; });
+        const entered = new Promise((resolve) => { reached = resolve; });
+        const pause = async (name) => { if (name === stage) { reached(); await gate; } };
+        let written;
+        window.showSaveFilePicker = async () => {
+          await pause('picker');
+          return { createWritable: async () => {
+            await pause('create');
+            return {
+              write: async (text) => { written = text; await pause('write'); },
+              close: async () => { await pause('close'); },
+            };
+          } };
+        };
+        huddle.comment('c7', 'Before save');
+        const pending = huddle.save();
+        await entered;
+        huddle.comment('c7', 'During save');
+        release();
+        const status = await pending;
+        const unload = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(unload);
+        const doc = new DOMParser().parseFromString(written, 'text/html');
+        const persisted = JSON.parse(doc.querySelector('[data-huddle-context]').textContent);
+        const stale = {
+          status, dirty: huddle.dirty, warns: unload.defaultPrevented,
+          toolbar: document.querySelector('.huddle-state').textContent,
+          notes: persisted.threads.c7.map((n) => n.text),
+        };
+        await huddle.save();
+        const cleanUnload = new Event('beforeunload', { cancelable: true });
+        window.dispatchEvent(cleanUnload);
+        const savedDoc = new DOMParser().parseFromString(written, 'text/html');
+        return {
+          stale, dirty: huddle.dirty, warns: cleanUnload.defaultPrevented,
+          notes: JSON.parse(savedDoc.querySelector('[data-huddle-context]').textContent).threads.c7.map((n) => n.text),
+        };
+      }, stage);
+      assert.deepEqual(result.stale.notes, ['Before save'], stage);
+      assert.equal(result.stale.status, 'saved', stage);
+      assert.equal(result.stale.dirty, true, stage);
+      assert.equal(result.stale.warns, true, stage);
+      assert.match(result.stale.toolbar, /unsaved changes/, stage);
+      assert.deepEqual(result.notes, ['Before save', 'During save'], stage);
+      assert.equal(result.dirty, false, stage);
+      assert.equal(result.warns, false, stage);
+    }
+  });
+
+  test('overlapping saves write in order and persist the newest snapshot last', async () => {
+    await browser.open(sampleUrl);
+    const result = await browser.call(async () => {
+      let release;
+      let reached;
+      const gate = new Promise((resolve) => { release = resolve; });
+      const entered = new Promise((resolve) => { reached = resolve; });
+      const writes = [];
+      const order = [];
+      let count = 0;
+      window.showSaveFilePicker = async () => ({ createWritable: async () => {
+        const id = ++count;
+        order.push(`create${id}`);
+        return {
+          write: async (text) => {
+            if (id === 1) { reached(); await gate; }
+            writes.push(text);
+            order.push(`write${id}`);
+          },
+          close: async () => { order.push(`close${id}`); },
+        };
+      } });
+      huddle.comment('c7', 'First');
+      const first = huddle.save();
+      await entered;
+      huddle.comment('c7', 'Second');
+      const second = huddle.save();
+      await Promise.resolve();
+      const queued = count;
+      release();
+      const statuses = await Promise.all([first, second]);
+      return {
+        queued, statuses, order, dirty: huddle.dirty,
+        notes: writes.map((text) => {
+          const doc = new DOMParser().parseFromString(text, 'text/html');
+          return JSON.parse(doc.querySelector('[data-huddle-context]').textContent).threads.c7.map((n) => n.text);
+        }),
+      };
+    });
+    assert.equal(result.queued, 1);
+    assert.deepEqual(result.statuses, ['saved', 'saved']);
+    assert.deepEqual(result.order, ['create1', 'write1', 'close1', 'create2', 'write2', 'close2']);
+    assert.deepEqual(result.notes, [['First'], ['First', 'Second']]);
+    assert.equal(result.dirty, false);
+  });
+
+  test('cancelled and failed saves keep changes dirty and allow a later save', async () => {
+    await browser.open(sampleUrl);
+    const result = await browser.call(async () => {
+      huddle.comment('c7', 'Keep me');
+      window.showSaveFilePicker = async () => { throw new DOMException('Cancelled', 'AbortError'); };
+      const cancelled = await huddle.save();
+      const afterCancel = huddle.dirty;
+      window.showSaveFilePicker = async () => ({ createWritable: async () => { throw new Error('Disk unavailable'); } });
+      const failed = huddle.save().catch((err) => err.message);
+      const queued = huddle.save().catch((err) => err.message);
+      const errors = await Promise.all([failed, queued]);
+      const afterFailure = huddle.dirty;
+      window.showSaveFilePicker = undefined;
+      HTMLAnchorElement.prototype.click = () => {};
+      const downloaded = await huddle.save();
+      return { cancelled, afterCancel, errors, afterFailure, downloaded, dirty: huddle.dirty };
+    });
+    assert.equal(result.cancelled, 'cancelled');
+    assert.equal(result.afterCancel, true);
+    assert.deepEqual(result.errors, ['Disk unavailable', 'Disk unavailable']);
+    assert.equal(result.afterFailure, true);
+    assert.equal(result.downloaded, 'downloaded');
+    assert.equal(result.dirty, false);
+  });
+
+  test('download fallback does not clear a mutation made while handing off the snapshot', async () => {
+    await browser.open(sampleUrl);
+    const result = await browser.call(async () => {
+      window.showSaveFilePicker = undefined;
+      let blob;
+      URL.createObjectURL = (value) => { blob = value; return 'blob:download'; };
+      URL.revokeObjectURL = () => {};
+      HTMLAnchorElement.prototype.click = () => { huddle.comment('c7', 'After snapshot'); };
+      huddle.comment('c7', 'Before snapshot');
+      const status = await huddle.save();
+      const doc = new DOMParser().parseFromString(await blob.text(), 'text/html');
+      return {
+        status, dirty: huddle.dirty,
+        notes: JSON.parse(doc.querySelector('[data-huddle-context]').textContent).threads.c7.map((n) => n.text),
+        toolbar: document.querySelector('.huddle-state').textContent,
+      };
+    });
+    assert.equal(result.status, 'downloaded');
+    assert.deepEqual(result.notes, ['Before snapshot']);
+    assert.equal(result.dirty, true);
+    assert.match(result.toolbar, /unsaved changes/);
+  });
+
   test('the saved file reopens as the same board, with notes and changes, and still works', async () => {
     await browser.open(sampleUrl);
     const saved = await browser.call(() => {

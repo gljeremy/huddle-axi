@@ -137,11 +137,6 @@ export async function launchBrowser() {
         }
         return res.result.value;
       },
-      // Full-page PNG, for looking at a board by eye.
-      async screenshot() {
-        const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
-        return Buffer.from(data, 'base64');
-      },
       async close() {
         cdp.close();
         await shutdown();

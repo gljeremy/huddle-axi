@@ -30,15 +30,19 @@
     console.error('huddle: the context block is not valid JSON', err);
     context = {};
   }
-  context.threads ||= {};
+  context.threads = Object.assign(Object.create(null), context.threads);
   context.revisions ||= [];
 
   const cardAttr = Object.fromEntries(Object.entries(RULES.cardAttrs).map(([k, v]) => [k, new RegExp(v)]));
   const attrPattern = Object.fromEntries(Object.entries(RULES.attrPatterns).map(([k, v]) => [k, new RegExp(v, 'i')]));
   const blocked = new Set(RULES.blockedInHtml);
-  const urlAttrs = new Set(['href', 'src', 'xlink:href', 'action', 'formaction', 'poster']);
+  const urlAttrs = new Set(['href', 'src', 'xlink:href', 'xml:base', 'action', 'formaction', 'poster', 'background', 'cite', 'longdesc', 'usemap']);
+  const urlLists = new Set(['srcset', 'imagesrcset', 'ping']);
+  const cssAttrs = new Set(['style', 'fill', 'stroke', 'filter', 'clip-path', 'mask', 'cursor', 'marker', 'marker-start', 'marker-mid', 'marker-end', 'color-profile', 'shape-inside', 'shape-subtract', 'offset-path']);
 
   let dirty = false;
+  let generation = 0;
+  let saving = null;
   let problems = [];
   let fileHandle = null;
   const freshTimers = new WeakMap();
@@ -76,7 +80,10 @@
         for (const { name, value } of el.attributes) {
           const n = name.toLowerCase();
           if (n.startsWith('on')) throw new HuddleError(`${name} handlers are not allowed (#${id})`);
-          if (n === 'srcdoc') throw new HuddleError(`srcdoc is not allowed (#${id})`);
+          if (n === 'srcdoc' || urlLists.has(n)) throw new HuddleError(`${name} is not allowed (#${id})`);
+          if (cssAttrs.has(n) && /\\|\/\*|(?:url|image|image-set|-webkit-image-set|src)\s*\(/i.test(value)) {
+            throw new HuddleError(`CSS resources are not allowed (#${id})`);
+          }
           if (urlAttrs.has(n) && !attrPattern.href.test(value.trim()) && !/^data:image\//i.test(value.trim())) {
             throw new HuddleError(`${name}="${value}" is not a safe URL (#${id})`);
           }
@@ -166,6 +173,7 @@
   }
 
   function markDirty() {
+    generation++;
     dirty = true;
     renderToolbar();
   }
@@ -175,17 +183,13 @@
     if (context.revisions.length > MAX_REVISIONS) context.revisions.splice(0, context.revisions.length - MAX_REVISIONS);
   }
 
-  function emit(name, detail) {
-    window.dispatchEvent(new CustomEvent(`huddle:${name}`, { detail }));
-  }
-
   // ---------- public API ----------
 
   function patch(html, { by = 'agent', note } = {}) {
     const next = parseSection(html);
     const id = next.dataset.card;
     const el = cardEl(id);
-    if (!el) throw new HuddleError(`there is no card #${id}; use huddle.add() for a new card`);
+    if (!el) throw new HuddleError(`there is no card #${id}`);
     for (const name of el.getAttributeNames()) el.removeAttribute(name);
     for (const { name, value } of next.attributes) el.setAttribute(name, value);
     el.replaceChildren(...next.childNodes);
@@ -193,41 +197,7 @@
     flash(el);
     record(id, 'patch', by, note);
     markDirty();
-    emit('patched', { card: id, op: 'patch' });
     return id;
-  }
-
-  function add(html, { lane, after, by = 'agent', note } = {}) {
-    const next = parseSection(html);
-    const id = next.dataset.card;
-    if (cardEl(id)) throw new HuddleError(`card #${id} already exists; use huddle.patch() to change it`);
-    const el = document.importNode(next, true);
-    if (after) {
-      const anchor = cardEl(after);
-      if (!anchor) throw new HuddleError(`there is no card #${after} to add after`);
-      anchor.after(el);
-    } else {
-      const lanes = [...board.querySelectorAll('[data-lane]')];
-      const target = lane ? lanes.find((l) => l.dataset.lane === lane) : lanes.at(-1);
-      if (!target) throw new HuddleError(lane ? `there is no lane "${lane}"` : 'this board has no lanes');
-      target.append(el);
-    }
-    decorate(el);
-    flash(el);
-    record(id, 'add', by, note);
-    markDirty();
-    emit('patched', { card: id, op: 'add' });
-    return id;
-  }
-
-  function remove(id, { by = 'agent', note } = {}) {
-    const el = cardEl(id);
-    if (!el) throw new HuddleError(`there is no card #${id}`);
-    el.remove();
-    delete context.threads[id];
-    record(id, 'remove', by, note);
-    markDirty();
-    emit('patched', { card: id, op: 'remove' });
   }
 
   function comment(id, text, who = 'facilitator') {
@@ -238,7 +208,6 @@
     (context.threads[id] ||= []).push({ who, text: body, at: new Date().toISOString() });
     decorate(el);
     markDirty();
-    emit('comment', { card: id, text: body, who });
   }
 
   function get(id) {
@@ -267,8 +236,18 @@
     return /\.html?$/i.test(last) ? last : 'board.html';
   }
 
-  async function save() {
+  function save() {
+    const pending = saving ? saving.then(writeSave, writeSave) : writeSave();
+    saving = pending;
+    const finished = () => { if (saving === pending) saving = null; };
+    pending.then(finished, finished);
+    return pending;
+  }
+
+  async function writeSave() {
+    const savedGeneration = generation;
     const text = serialize();
+    let result;
     if (window.showSaveFilePicker) {
       try {
         fileHandle ||= await window.showSaveFilePicker({
@@ -282,19 +261,19 @@
         if (err.name === 'AbortError') return 'cancelled';
         throw err;
       }
-      dirty = false;
-      renderToolbar('saved');
-      return 'saved';
+      result = 'saved';
+    } else {
+      const link = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(new Blob([text], { type: 'text/html' })),
+        download: fileName(),
+      });
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+      result = 'downloaded';
     }
-    const link = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(new Blob([text], { type: 'text/html' })),
-      download: fileName(),
-    });
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
-    dirty = false;
-    renderToolbar('downloaded');
-    return 'downloaded';
+    dirty = generation !== savedGeneration;
+    renderToolbar(dirty ? undefined : result);
+    return result;
   }
 
   // ---------- wiring ----------
@@ -347,8 +326,6 @@
     cards,
     get,
     patch,
-    add,
-    remove,
     comment,
     serialize,
     save,
@@ -360,5 +337,4 @@
       return problems.map((p) => ({ ...p }));
     },
   });
-  emit('ready', { version: VERSION, cards: allCards().length });
 })();
