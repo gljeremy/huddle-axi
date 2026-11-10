@@ -141,6 +141,11 @@ export function startServer({ token = randomBytes(16).toString('hex'), idleMs = 
       clearTimeout(poller.timer);
       const note = s.notes.shift();
       snapshot(s, note).then((current) => {
+        if (poller.res.destroyed || poller.res.writableEnded) {
+          s.notes.unshift(note);
+          deliver(s);
+          return;
+        }
         send(poller.res, 200, { note: current });
         emit(s, 'claimed', { card: note.card });
       });

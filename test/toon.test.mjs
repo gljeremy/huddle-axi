@@ -87,6 +87,19 @@ test('count mismatches and bad syntax name the line', () => {
   }
 });
 
+test('duplicate table columns fail on the header line instead of discarding values', () => {
+  for (const table of [
+    'meta[1]{key,value,value}:\n  owner,Alex,Sam',
+    'options[1]{label,detail,votes,chosen,votes}:\n  Wizard,,5,true,6',
+    'meta[1]{key,value, value }:\n  owner,Alex,Sam',
+    'rows[0]{id,id}:',
+  ]) {
+    const text = `title: Example\n${table}`;
+    assert.throws(() => decode(text), (err) => err instanceof ToonError && err.line === 2 && /duplicate field/.test(err.message));
+  }
+  assert.deepEqual(decode('meta[1]{key,value}:\n  owner,Alex'), { meta: [{ key: 'owner', value: 'Alex' }] });
+});
+
 test('accepts CRLF line endings and blank lines', () => {
   assert.deepEqual(decode('a: 1\r\n\r\nb[2]: x,y\r\n'), { a: 1, b: ['x', 'y'] });
 });

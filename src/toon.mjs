@@ -156,6 +156,7 @@ export function decode(text) {
       if (after) throw new ToonError(`rows for ${key}[${n}] go on the following lines`, lineNo);
       const names = fields.split(',').map((f) => f.trim());
       if (names.some((f) => !KEY.test(f))) throw new ToonError(`bad field list {${fields}}`, lineNo);
+      if (new Set(names).size !== names.length) throw new ToonError(`duplicate field in {${fields}}`, lineNo);
       out[key] = take(n, key, lineNo).map(({ text: row, line }) => {
         const values = splitValues(row, line);
         if (values.length !== names.length) {
