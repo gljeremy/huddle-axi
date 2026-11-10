@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startServer } from '../src/server.mjs';
@@ -76,5 +76,68 @@ test('cancelled polls preserve notes without claiming them', async (t) => {
         rmSync(dir, { recursive: true, force: true });
       }
     });
+  }
+});
+
+test('filesystem errors stay local to the request and atomic saves preserve access', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'huddle-files-'));
+  const file = join(dir, 'board.html');
+  const original = '<!doctype html><title>Original</title>';
+  const updated = '<!doctype html><title>Updated</title>';
+  writeFileSync(file, original);
+  const { server, token, stop } = startServer();
+  try {
+    await once(server, 'listening');
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const post = (url, body) => fetch(url, {
+      method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(body), signal: AbortSignal.timeout(5000),
+    });
+    const opened = await post(`${base}/api/open`, { file });
+    assert.equal(opened.status, 200);
+    const { url } = await opened.json();
+
+    await t.test('a missing board returns an error without losing its session or queued notes', async () => {
+      assert.equal((await post(`${url}note`, { card: 'c1', text: 'Keep queued work' })).status, 200);
+      renameSync(file, `${file}.backup`);
+      const failed = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      assert.equal(failed.status, 500);
+      assert.match((await failed.json()).error, /ENOENT/);
+      const health = await fetch(`${base}/api/health`, { headers: { authorization: `Bearer ${token}` } });
+      assert.equal(health.status, 200);
+      assert.equal((await health.json()).sessions, 1);
+      const poll = await post(`${base}/api/poll`, { file, timeoutMs: 100 });
+      assert.equal((await poll.json()).note.text, 'Keep queued work');
+      renameSync(`${file}.backup`, file);
+      const restored = await fetch(url);
+      assert.equal(restored.status, 200);
+      assert.equal(await restored.text(), original);
+    });
+
+    await t.test('saving a private board never broadens its POSIX permissions', { skip: process.platform === 'win32' }, async () => {
+      for (const mode of [0o600, 0o640]) {
+        chmodSync(file, mode);
+        const saved = await post(`${url}save`, { html: updated });
+        assert.equal(saved.status, 200);
+        assert.deepEqual(await saved.json(), { saved: true });
+        assert.equal(statSync(file).mode & 0o777, mode & ~process.umask());
+        assert.equal(readFileSync(file, 'utf8'), updated);
+      }
+    });
+
+    await t.test('saving recreates a missing board with default permissions', async () => {
+      rmSync(file);
+      const saved = await post(`${url}save`, { html: updated });
+      assert.equal(saved.status, 200);
+      assert.deepEqual(await saved.json(), { saved: true });
+      assert.equal(readFileSync(file, 'utf8'), updated);
+      if (process.platform !== 'win32') assert.equal(statSync(file).mode & 0o777, 0o666 & ~process.umask());
+      const served = await fetch(url);
+      assert.equal(served.status, 200);
+      assert.equal(await served.text(), updated);
+    });
+  } finally {
+    stop();
+    rmSync(dir, { recursive: true, force: true });
   }
 });

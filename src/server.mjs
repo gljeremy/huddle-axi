@@ -7,7 +7,7 @@
 // Agent side (token in the state file):   POST /api/open, /api/poll, /api/patch, /api/stop
 // Browser side (the session id is secret): GET /b/<id>/, /b/<id>/events; POST /b/<id>/save, note, ack
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -51,7 +51,7 @@ function readBody(req) {
 }
 
 const send = (res, status, body) => {
-  if (res.writableEnded || res.destroyed) return;
+  if (res.writableEnded || res.destroyed || res.headersSent) return;
   res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
   res.end(JSON.stringify(body));
 };
@@ -60,7 +60,8 @@ const send = (res, status, body) => {
 // refuse the rename while another process has the file open, so retry a little.
 async function writeAtomic(file, text) {
   const tmp = `${file}.${process.pid}.${randomBytes(4).toString('hex')}.tmp`;
-  writeFileSync(tmp, text);
+  const mode = statSync(file, { throwIfNoEntry: false })?.mode ?? 0o666;
+  writeFileSync(tmp, text, { mode: mode & 0o777 });
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
@@ -208,8 +209,9 @@ export function startServer({ token = randomBytes(16).toString('hex'), idleMs = 
 
   async function browser(req, res, s, action) {
     if (req.method === 'GET' && action === '') {
+      const html = readFileSync(s.file);
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
-      return res.end(readFileSync(s.file));
+      return res.end(html);
     }
     if (req.method === 'GET' && action === 'events') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
