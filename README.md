@@ -1,6 +1,7 @@
 # huddle-axi
 
-Status: planning. No code yet.
+Status: step 0 measured; product implementation has not started. See the
+[benchmark results and reproduction instructions](bench/RESULTS.md).
 
 A planned board for running a discussion on a shared screen. The facilitator comments
 on one card and the agent rewrites just that card, in place, in a few seconds. The rest
@@ -25,8 +26,8 @@ The reviewed plan is in `lavish-fast-plan.html`.
 npm run lint
 ```
 
-Fails if any text file in the repo is over 1000 lines. The single-file board is built
-into `dist/` (ignored) from smaller source files, so the cap applies to the sources.
+Fails if any text file in the repo is over 1000 lines. Product builds will go into
+`dist/` (ignored) from smaller source files, so the cap applies to the sources.
 A pre-commit hook in `.githooks/` runs the same check. Turn it on once per clone:
 
 ```bash

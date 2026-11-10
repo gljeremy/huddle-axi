@@ -20,11 +20,9 @@ worth removing.
 - 17 cards: goals, metrics, decisions, risks, ideas, a timeline and an action table
 - its own CSS
 - two Lavish question forms
-- 15.9 KB and 271 lines
 
-That is smaller than many Lavish artifacts. The plan file, for comparison, is about 33 KB.
-A rewrite should take longer as the file grows, so these numbers likely flatter stock
-Lavish. This was not measured.
+A rewrite should take longer as the file grows, so larger artifacts may favor targeted
+edits even more. This was not measured.
 
 The file in this folder is the board after all six edits below.
 
@@ -75,6 +73,12 @@ layout. The script records three moments:
 - when the layout gate lifts
 
 It flags any run where the gate timed out or never appeared.
+
+To reproduce, use Node.js 22 or later and a live stock Lavish session serving
+`bench/board.html`. Pass that session's URL below. The script defaults to Chrome's
+standard Windows installation path; an optional fourth argument selects another
+browser executable. It temporarily adds hidden markers to the artifact and restores
+its original contents in a `finally` block.
 
 ```bash
 node bench/measure-reload.mjs <session url> bench/board.html 5
