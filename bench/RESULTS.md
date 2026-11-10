@@ -20,9 +20,11 @@ worth removing.
 - 17 cards: goals, metrics, decisions, risks, ideas, a timeline and an action table
 - its own CSS
 - two Lavish question forms
+- 15.9 KB and 271 lines before the timed edits (16.2 KB and 272 lines after)
 
-A rewrite should take longer as the file grows, so larger artifacts may favor targeted
-edits even more. This was not measured.
+That is smaller than many Lavish artifacts. The plan file in this repo, for comparison,
+is about 36 KB. A rewrite should take longer as the file grows, so larger artifacts may
+favor targeted edits even more. This was not measured.
 
 The file in this folder is the board after all six edits below.
 
