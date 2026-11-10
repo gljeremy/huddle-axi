@@ -48,7 +48,7 @@ test('new refuses to overwrite a file unless forced', () => {
 });
 
 test('bad usage exits 2 with the usage text', () => {
-  for (const args of [[], ['new'], ['open', 'x.html'], ['new', 'x.html', '--colour'], ['new', 'x.html', '--title']]) {
+  for (const args of [[], ['new'], ['poll'], ['stop', 'x.html'], ['publish', 'x.html'], ['new', 'x.html', '--colour'], ['new', 'x.html', '--title']]) {
     const res = run(...args);
     assert.equal(res.status, 2, `huddle-axi ${args.join(' ')}`);
     assert.match(res.stderr, /usage|--title needs a value/);
