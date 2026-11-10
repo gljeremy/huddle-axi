@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q3 onboarding redesign: working session</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :where(.grid, .flex) > * { min-width: 0; }
+  :where(p, h1, h2, h3, li, td, th) { overflow-wrap: anywhere; }
+  :where(img, svg) { max-width: 100%; height: auto; }
+
+  :root {
+    --bg: #f5f1e8; --paper: #fffdf8; --ink: #1d1b16; --muted: #5d574a; --faint: #8a8170;
+    --line: #ded4c0; --line-strong: #c7b998; --accent: #c2410c; --accent-bg: #fff1e6;
+    --goal: #1d4ed8; --goal-bg: #e8efff; --decision: #a16207; --decision-bg: #fff6d6;
+    --risk: #b91c1c; --risk-bg: #ffe9e9; --metric: #15803d; --metric-bg: #e6f6ea;
+    --idea: #7e22ce; --idea-bg: #f4eaff; --action: #0f766e; --action-bg: #e2f6f3;
+    --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+    --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  }
+  html { background: var(--bg); color: var(--ink); }
+  body { margin: 0; font: 16px/1.5 var(--sans); background: var(--bg); }
+  main { max-width: 1200px; margin: 0 auto; padding: 32px 20px 72px; }
+  header { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between; border-bottom: 2px solid var(--ink); padding-bottom: 16px; }
+  h1 { font: 700 34px/1.1 var(--sans); margin: 0; letter-spacing: -0.02em; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .meta b { color: var(--ink); }
+  h2 { font: 700 13px/1 var(--sans); text-transform: uppercase; letter-spacing: .12em; color: var(--faint); margin: 36px 0 12px; }
+  .grid { display: grid; gap: 14px; }
+  .cols { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 12px; position: relative; }
+  .card .kind { display: inline-block; font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .08em; padding: 4px 7px; border-radius: 999px; }
+  .card h3 { font: 650 18px/1.3 var(--sans); margin: 10px 0 6px; }
+  .card p { margin: 0 0 8px; color: var(--muted); font-size: 15px; }
+  .card ul { margin: 6px 0 8px; padding-left: 20px; color: var(--muted); font-size: 15px; }
+  .card li { margin: 3px 0; }
+  .card footer { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12.5px; color: var(--faint); border-top: 1px dashed var(--line); padding-top: 8px; margin-top: 8px; }
+  .card footer span b { color: var(--muted); font-weight: 600; }
+  .k-goal .kind { background: var(--goal-bg); color: var(--goal); }
+  .k-decision .kind { background: var(--decision-bg); color: var(--decision); }
+  .k-risk .kind { background: var(--risk-bg); color: var(--risk); }
+  .k-metric .kind { background: var(--metric-bg); color: var(--metric); }
+  .k-idea .kind { background: var(--idea-bg); color: var(--idea); }
+  .k-action .kind { background: var(--action-bg); color: var(--action); }
+  .k-decision { border-left: 4px solid var(--decision); }
+  .k-risk { border-left: 4px solid var(--risk); }
+  .opts { display: grid; gap: 6px; margin: 8px 0; }
+  .opt { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: #fffaf0; }
+  .opt .votes { font: 600 13px var(--mono); color: var(--decision); min-width: 28px; }
+  .opt b { display: block; font-size: 14.5px; }
+  .opt small { color: var(--faint); font-size: 13px; }
+  .opt.lead { border-color: var(--decision); background: var(--decision-bg); }
+  .big { font: 750 40px/1 var(--sans); letter-spacing: -0.02em; margin: 8px 0 2px; }
+  .big small { font-size: 18px; color: var(--faint); font-weight: 600; }
+  .bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0; }
+  .bar i { display: block; height: 100%; background: var(--metric); border-radius: 999px; }
+  .sev { font: 600 12px var(--mono); }
+  .sev.high { color: var(--risk); } .sev.med { color: var(--decision); } .sev.low { color: var(--metric); }
+  table.actions { width: 100%; border-collapse: collapse; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 14.5px; }
+  table.actions th, table.actions td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  table.actions th { font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--faint); background: #fbf6ea; }
+  table.actions td.done { color: var(--metric); font-weight: 600; }
+  .parking { columns: 2 280px; column-gap: 14px; }
+  .parking .card { break-inside: avoid; margin-bottom: 14px; }
+  .timeline { display: flex; gap: 0; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+  .timeline div { flex: 1 0 160px; padding: 12px 14px; border-right: 1px solid var(--line); }
+  .timeline div:last-child { border-right: 0; }
+  .timeline b { display: block; font-size: 13px; color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+  .timeline span { font-size: 14.5px; }
+  .timeline .now { background: var(--accent-bg); }
+  .timeline .now b { color: var(--accent); }
+  .ask { background: var(--paper); border: 1px solid var(--line-strong); border-radius: 12px; padding: 16px; }
+  .ask legend { font-weight: 650; padding: 0; margin-bottom: 8px; }
+  .ask fieldset { border: 0; margin: 0; padding: 0; }
+  .ask label { display: flex; gap: 10px; padding: 7px 8px; border-radius: 8px; cursor: pointer; }
+  .ask label:hover { background: #fbf6ea; }
+  .ask button { font: 600 14px var(--sans); background: var(--ink); color: var(--paper); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; margin-top: 8px; }
+  .ask .status { font-size: 13px; color: var(--faint); margin-left: 8px; }
+  @media (max-width: 640px) { h1 { font-size: 26px; } .big { font-size: 32px; } }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div>
+    <h1>Q3 onboarding redesign</h1>
+    <div class="meta">Working session · <b>Product, Design, Support, Sales eng</b> · facilitator: <b>Jeremy</b></div>
+  </div>
+  <div class="meta">Session 2 of 3 · last updated during the meeting</div>
+</header>
+
+<h2>Where we're headed</h2>
+<div class="grid cols">
+  <section class="card k-goal" data-card="c1">
+    <span class="kind">goal</span>
+    <h3>Cut time-to-first-value</h3>
+    <p>New users should reach a working dashboard in under 5 minutes, without a sales call or a support ticket.</p>
+    <footer><span>owner <b>Product</b></span><span>agreed in session 1</span></footer>
+  </section>
+  <section class="card k-goal" data-card="c2">
+    <span class="kind">goal</span>
+    <h3>One path for every signup source</h3>
+    <p>Self-serve, invited teammates and SSO seats should all land in the same first-run flow instead of three different ones.</p>
+    <footer><span>owner <b>Design</b></span><span>new this session</span></footer>
+  </section>
+  <section class="card k-metric" data-card="c3">
+    <span class="kind">metric</span>
+    <h3>Activation rate</h3>
+    <div class="big">41% <small>→ 60% target</small></div>
+    <div class="bar"><i style="width:41%"></i></div>
+    <p>A dashboard with at least one live data source within 7 days of signup.</p>
+    <footer><span>source <b>product analytics</b></span><span>baseline: last 90 days</span></footer>
+  </section>
+  <section class="card k-metric" data-card="c4">
+    <span class="kind">metric</span>
+    <h3>Median time to first dashboard</h3>
+    <div class="big">23 min <small>→ 5 min target</small></div>
+    <div class="bar"><i style="width:22%"></i></div>
+    <p>Measured from account creation to the first saved dashboard. The long tail is mostly people waiting on data access.</p>
+    <footer><span>source <b>event log</b></span><span>p90 is 3.2 days</span></footer>
+  </section>
+</div>
+
+<h2>Open decisions</h2>
+<div class="grid cols">
+  <section class="card k-decision" data-card="c5">
+    <span class="kind">decided</span>
+    <h3>Setup data: progressive wizard</h3>
+    <p>Three short steps, skippable and resumable later. CSV import stays on the list as a shortcut inside step 1, not a separate path.</p>
+    <div class="opts">
+      <div class="opt lead"><span class="votes">5</span><div><b>Progressive wizard</b><small>Chosen in session 2</small></div></div>
+      <div class="opt"><span class="votes">1</span><div><b>Import from CSV</b><small>Later: a shortcut inside step 1</small></div></div>
+      <div class="opt"><span class="votes">2</span><div><b>Long form up front</b><small>Dropped</small></div></div>
+    </div>
+    <footer><span>decided <b>session 2</b></span><span>Support agreed</span></footer>
+  </section>
+  <section class="card k-decision" data-card="c6">
+    <span class="kind">decision</span>
+    <h3>What does an empty account show?</h3>
+    <p>Today a new account opens on a blank canvas, and a lot of people bounce right there. Leaning toward demo data, pending the design spike.</p>
+    <div class="opts">
+      <div class="opt lead"><span class="votes">4</span><div><b>Sample dashboard with demo data</b><small>Clearly labeled, one click to swap in real data</small></div></div>
+      <div class="opt"><span class="votes">3</span><div><b>Template gallery</b><small>Pick a starting point by role</small></div></div>
+      <div class="opt"><span class="votes">0</span><div><b>Keep the blank canvas</b><small>Add a short checklist in the sidebar</small></div></div>
+    </div>
+    <footer><span>decide by <b>session 3</b></span><span>needs a design spike</span></footer>
+  </section>
+  <section class="card k-decision" data-card="c7">
+    <span class="kind">decided</span>
+    <h3>SSO seats: short personal tour</h3>
+    <p>SSO users skip workspace setup because their admin already did it. They still get the personal steps: role, first dashboard, invite a teammate.</p>
+    <div class="opts">
+      <div class="opt lead"><span class="votes">4</span><div><b>Short personal tour</b><small>Chosen in session 2</small></div></div>
+      <div class="opt"><span class="votes">2</span><div><b>Full wizard</b><small>Dropped; Sales eng's concern noted in c8</small></div></div>
+    </div>
+    <footer><span>decided <b>session 2</b></span><span>Sales eng to confirm admin settings</span></footer>
+  </section>
+</div>
+
+<h2>Risks</h2>
+<div class="grid cols">
+  <section class="card k-risk" data-card="c8">
+    <span class="kind">risk</span>
+    <h3>SSO users skip onboarding entirely</h3>
+    <p>About a third of seats arrive by SSO and never see onboarding at all, so a redesign of the self-serve flow misses them.</p>
+    <footer><span class="sev high">severity high</span><span>linked to <b>c7</b></span></footer>
+  </section>
+  <section class="card k-risk" data-card="c9">
+    <span class="kind">risk</span>
+    <h3>Data access is the real bottleneck</h3>
+    <p>Most of the 23 minutes is people waiting for credentials from their own IT team. A faster wizard won't fix that.</p>
+    <ul><li>Offer demo data so they can explore while they wait</li><li>Send a ready-made request email they can forward to IT</li><li>Let an admin pre-approve data sources for the whole workspace</li></ul>
+    <footer><span class="sev high">severity high</span><span>raised by <b>Support</b></span></footer>
+  </section>
+  <section class="card k-risk" data-card="c10">
+    <span class="kind">risk</span>
+    <h3>Demo data gets mistaken for real data</h3>
+    <p>If sample numbers look too real, someone will screenshot them into a deck.</p>
+    <footer><span class="sev med">severity medium</span><span>linked to <b>c6</b></span></footer>
+  </section>
+  <section class="card k-risk" data-card="c11">
+    <span class="kind">risk</span>
+    <h3>Q3 is already full, until mid-August</h3>
+    <p>Two engineers are committed to the billing migration until mid-August. If one frees up in July, the wizard can still ship behind a flag before the August rollout.</p>
+    <ul><li>Fallback: ship the SSO personal tour first, since it's smaller</li></ul>
+    <footer><span class="sev high">severity high</span><span>raised by <b>Product</b></span><span>linked to <b>c16</b></span></footer>
+  </section>
+</div>
+
+<h2>Ideas we haven't sorted yet</h2>
+<div class="parking">
+  <section class="card k-idea" data-card="c12">
+    <span class="kind">idea</span>
+    <h3>Checklist that follows you</h3>
+    <p>A small progress widget that stays in the corner for the first week, not just the first session.</p>
+  </section>
+  <section class="card k-idea" data-card="c13">
+    <span class="kind">idea</span>
+    <h3>Invite a teammate as a setup step</h3>
+    <p>Teams with two or more active people in week one retain much better. Make inviting someone part of setup.</p>
+  </section>
+  <section class="card k-idea" data-card="c14">
+    <span class="kind">idea</span>
+    <h3>Ask the role, not the company size</h3>
+    <p>Role predicts which dashboard people want far better than headcount does.</p>
+  </section>
+  <section class="card k-idea" data-card="c15">
+    <span class="kind">idea</span>
+    <h3>Live chat only in the first hour</h3>
+    <p>Support has capacity for a narrow window. Offer chat during the first hour after signup, when it matters most.</p>
+  </section>
+</div>
+
+<h2>Plan</h2>
+<div class="timeline" data-card="c16">
+  <div><b>Session 1</b><span>Agree goals and metrics</span></div>
+  <div class="now"><b>Session 2 · now</b><span>Decide setup flow and SSO path</span></div>
+  <div><b>Session 3</b><span>Empty state, review the design spike</span></div>
+  <div><b>July</b><span>Build the wizard behind a flag</span></div>
+  <div><b>August</b><span>10% rollout, watch activation</span></div>
+</div>
+
+<h2>Actions</h2>
+<table class="actions" data-card="c17">
+  <tr><th>Action</th><th>Owner</th><th>Due</th><th>Status</th></tr>
+  <tr><td>Pull activation by signup source for the last 90 days</td><td>Product analytics</td><td>Before session 3</td><td class="done">done</td></tr>
+  <tr><td>Draft the three wizard steps as wireframes</td><td>Design</td><td>Before session 3</td><td>in progress</td></tr>
+  <tr><td>List what SSO admins already configure, and which of it the personal tour can skip</td><td>Sales eng</td><td>Before session 3</td><td>in progress</td></tr>
+  <tr><td>Write the "request data access" email template</td><td>Support</td><td>Next week</td><td>not started</td></tr>
+  <tr><td>Check whether billing migration can free one engineer in July</td><td>Product</td><td>Friday</td><td>not started</td></tr>
+</table>
+
+<h2>Before we wrap up</h2>
+<div class="grid cols">
+  <form class="ask" data-lavish-question="setup" onsubmit="return queue(event,'setup','Setup data')">
+    <fieldset><legend>Which setup flow do we go with?</legend>
+      <label><input type="radio" name="v" value="Progressive wizard"> Progressive wizard</label>
+      <label><input type="radio" name="v" value="Long form up front"> Long form up front</label>
+      <label><input type="radio" name="v" value="Import from CSV"> Import from CSV</label>
+    </fieldset>
+    <button type="submit">Queue answer</button><span class="status"></span>
+  </form>
+  <form class="ask" data-lavish-question="sso" onsubmit="return queue(event,'sso','SSO path')">
+    <fieldset><legend>Do SSO seats get the wizard?</legend>
+      <label><input type="radio" name="v" value="Short personal tour"> Short personal tour</label>
+      <label><input type="radio" name="v" value="Full wizard"> Full wizard</label>
+    </fieldset>
+    <button type="submit">Queue answer</button><span class="status"></span>
+  </form>
+</div>
+
+</main>
+<script>
+function queue(ev, key, label) {
+  ev.preventDefault();
+  const form = ev.currentTarget;
+  const val = (new FormData(form).get('v') || '').toString();
+  const status = form.querySelector('.status');
+  if (!val) { status.textContent = 'Pick one first.'; return false; }
+  if (window.lavish?.queuePrompt) {
+    window.lavish.queuePrompt(label + ': ' + val, { tag: 'choice', text: label + ': ' + val, element: form, queueKey: key, data: { question: key, answer: val } });
+    status.textContent = 'Queued.';
+  } else {
+    status.textContent = 'Selected.';
+  }
+  return false;
+}
+</script>
+</body>
+</html>
