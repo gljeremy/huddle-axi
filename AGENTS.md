@@ -4,7 +4,11 @@
   1000 lines: split the file instead of raising the cap. The tests drive a headless Chrome
   or Edge; set `HUDDLE_BROWSER` if neither is in its usual place.
 - A board is built from `src/` by `huddle-axi new`. Edit the sources (`runtime.js`,
-  `runtime.css`, `board-template.html`, `rules.mjs`), not a generated board.
+  `runtime-meeting.js`, `runtime.css`, `board-template.html`, `rules.mjs`), not a
+  generated board.
+- `runtime-meeting.js` is not a module. The build pastes it into `runtime.js` at the
+  `/*HUDDLE_MEETING*/` line, inside the runtime's closure, so it can use the runtime's
+  private functions. It holds the quick actions, present mode and the exports.
 - `src/rules.mjs` is the single source for the card rules. The runtime's validator and the
   protocol text inside each board are both generated from it.
 - The card's data shape lives in two places that must agree: `src/card-model.mjs`

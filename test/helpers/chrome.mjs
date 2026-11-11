@@ -137,6 +137,11 @@ export async function launchBrowser() {
         }
         return res.result.value;
       },
+      // A PNG of the whole page, for looking at a layout by eye.
+      async screenshot() {
+        const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: true });
+        return Buffer.from(data, 'base64');
+      },
       async close() {
         cdp.close();
         await shutdown();

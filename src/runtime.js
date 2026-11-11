@@ -6,10 +6,13 @@
 
   const RULES = /*HUDDLE_RULES*/ null;
   const VERSION = /*HUDDLE_VERSION*/ '0.0.0';
-  const FRESH_MS = 2500;
+  const FRESH_MS = 6000;
   const BUSY_MS = 120_000;
   const AUTOSAVE_MS = 300;
   const MAX_REVISIONS = 200;
+  const MAX_HISTORY = 10;
+  // The parts of a card that light up on their own when they change.
+  const BLOCKS = ':scope > h3, :scope > data, :scope > small, p, li, dt, dd';
   // Served by `huddle-axi open`: notes go to the agent, patches arrive over SSE, saves go through the server.
   const live = location.protocol === 'http:' && /^\/b\/[a-f0-9]{32}\/$/.test(location.pathname);
 
@@ -36,6 +39,8 @@
   }
   context.threads = Object.assign(Object.create(null), context.threads);
   context.revisions ||= [];
+  // Earlier versions of each card, oldest first, for undo. null means the card did not exist yet.
+  context.history = Object.assign(Object.create(null), context.history);
 
   const cardAttr = Object.fromEntries(Object.entries(RULES.cardAttrs).map(([k, v]) => [k, new RegExp(v)]));
   const attrPattern = Object.fromEntries(Object.entries(RULES.attrPatterns).map(([k, v]) => [k, new RegExp(v, 'i')]));
@@ -153,12 +158,39 @@
     const box = chrome('div', 'huddle-note');
     box.append(Object.assign(document.createElement('textarea'), { placeholder: 'Note for the agent. Enter to add, Esc to cancel.' }));
     el.append(box);
+    decorateQuick(el);
   }
 
-  function flash(el) {
+  // Each block of a card with its stored markup, so a change can be found block by block.
+  function blocks(el) {
+    if (el.dataset.kind === 'html') return [];
+    return [...el.querySelectorAll(BLOCKS)]
+      .filter((node) => !node.closest('[data-huddle-chrome]'))
+      .map((node) => ({ node, html: clean(node.cloneNode(true)).outerHTML }));
+  }
+
+  // Lights up the card, and inside it every block that is new or different from before.
+  function flash(el, before) {
     clearTimeout(freshTimers.get(el));
+    el.querySelectorAll('.huddle-changed').forEach(unmark);
     el.classList.add('huddle-fresh');
-    freshTimers.set(el, setTimeout(() => el.classList.remove('huddle-fresh'), FRESH_MS));
+    if (before) {
+      const seen = new Map();
+      for (const { html } of before) seen.set(html, (seen.get(html) ?? 0) + 1);
+      for (const { node, html } of blocks(el)) {
+        if (seen.get(html)) seen.set(html, seen.get(html) - 1);
+        else node.classList.add('huddle-changed');
+      }
+    }
+    freshTimers.set(el, setTimeout(() => {
+      el.classList.remove('huddle-fresh');
+      el.querySelectorAll('.huddle-changed').forEach(unmark);
+    }, FRESH_MS));
+  }
+
+  function unmark(node) {
+    node.classList.remove('huddle-changed');
+    if (!node.classList.length) node.removeAttribute('class');
   }
 
   // The agent picked up a note on this card. A patch replaces the card's attributes, which ends it.
@@ -171,6 +203,8 @@
   // Strips chrome and transient state, leaving the card exactly as it is stored.
   function clean(root) {
     root.querySelectorAll('[data-huddle-chrome]').forEach((n) => n.remove());
+    if (root.classList?.contains('huddle-changed')) unmark(root);
+    root.querySelectorAll('.huddle-changed').forEach(unmark);
     const cards = root.matches?.('[data-card]') ? [root] : [];
     for (const card of [...cards, ...root.querySelectorAll('[data-card]')]) {
       card.removeAttribute('class');
@@ -269,19 +303,116 @@
 
   // ---------- public API ----------
 
-  function patch(html, { by = 'agent', note } = {}) {
-    const next = parseSection(html);
-    const id = next.dataset.card;
-    const el = cardEl(id);
-    if (!el) throw new HuddleError(`there is no card #${id}`);
+  function apply(el, next) {
     for (const name of el.getAttributeNames()) el.removeAttribute(name);
     for (const { name, value } of next.attributes) el.setAttribute(name, value);
     el.replaceChildren(...next.childNodes);
     decorate(el);
-    flash(el);
-    record(id, 'patch', by, note);
+  }
+
+  function remember(id, html) {
+    const list = (context.history[id] ||= []);
+    list.push(html);
+    if (list.length > MAX_HISTORY) list.splice(0, list.length - MAX_HISTORY);
+  }
+
+  const laneEl = (id) => board.querySelector(`[data-lane="${CSS.escape(String(id))}"]`);
+
+  function patch(html, { by = 'agent', note, op = 'patch' } = {}) {
+    const next = parseSection(html);
+    const id = next.dataset.card;
+    const el = cardEl(id);
+    if (!el) throw new HuddleError(`there is no card #${id}`);
+    const before = get(id);
+    const parts = blocks(el);
+    apply(el, next);
+    if (get(id) !== before) {
+      remember(id, before);
+      decorate(el); // so the card's controls offer Undo
+    }
+    flash(el, parts);
+    record(id, op, by, note);
     markDirty();
     return id;
+  }
+
+  // Puts the card back the way it was before its last change. A card added on this board is removed.
+  function undo(id) {
+    const el = cardEl(id);
+    if (!el) throw new HuddleError(`there is no card #${id}`);
+    const list = context.history[id];
+    if (!list?.length) throw new HuddleError(`there is nothing to undo on #${id}`);
+    const previous = list.at(-1);
+    if (previous === null) {
+      el.remove();
+      delete context.history[id];
+      record(id, 'remove', 'facilitator', 'undo');
+      markDirty();
+      return id;
+    }
+    const next = parseSection(previous);
+    if (next.dataset.card !== id) throw new HuddleError(`the saved version of #${id} belongs to #${next.dataset.card}`);
+    list.pop();
+    if (!list.length) delete context.history[id];
+    const parts = blocks(el);
+    apply(el, next);
+    flash(el, parts);
+    record(id, 'undo', 'facilitator');
+    markDirty();
+    return id;
+  }
+
+  // Adds a new card at the end of a lane, or right after another card.
+  function add(html, { lane, after, by = 'facilitator', note } = {}) {
+    const next = parseSection(html);
+    const id = next.dataset.card;
+    if (cardEl(id)) throw new HuddleError(`there is already a card #${id}`);
+    const anchor = after == null ? null : cardEl(after);
+    if (after != null && !anchor) throw new HuddleError(`there is no card #${after}`);
+    const target = anchor ? anchor.closest('[data-lane]') : laneEl(lane);
+    if (!target) throw new HuddleError(`there is no lane "${lane}"`);
+    const el = document.createElement('section');
+    remember(id, null);
+    if (anchor) anchor.after(el);
+    else target.append(el);
+    apply(el, next);
+    flash(el, []);
+    record(id, 'add', by, note);
+    markDirty();
+    return id;
+  }
+
+  // Moves a card in front of another card, or to the end of a lane.
+  function move(id, { lane, before } = {}) {
+    const el = cardEl(id);
+    if (!el) throw new HuddleError(`there is no card #${id}`);
+    const anchor = before == null ? null : cardEl(before);
+    if (before != null && !anchor) throw new HuddleError(`there is no card #${before}`);
+    const target = anchor ? anchor.closest('[data-lane]') : laneEl(lane);
+    if (!target) throw new HuddleError(`there is no lane "${lane}"`);
+    if (anchor === el) return id;
+    if (anchor) anchor.before(el);
+    else target.append(el);
+    decorate(el);
+    flash(el, null);
+    record(id, 'move', 'facilitator', target.dataset.lane);
+    markDirty();
+    return id;
+  }
+
+  function lanes() {
+    return [...board.querySelectorAll('[data-lane]')].map((el) => ({
+      id: el.dataset.lane,
+      title: el.querySelector(':scope > h2')?.textContent.trim() ?? el.dataset.lane,
+    }));
+  }
+
+  // The next free id of the form c<n>.
+  function newId() {
+    const taken = allCards().map((el) => /^c(\d+)$/.exec(el.dataset.card)?.[1]).filter(Boolean).map(Number);
+    let n = Math.max(0, ...taken) + 1;
+    while (cardEl(`c${n}`) || Object.hasOwn(context.threads, `c${n}`) || Object.hasOwn(context.history, `c${n}`)) n++;
+    return `c${n}`;
   }
 
   function comment(id, text, who = 'facilitator') {
@@ -326,6 +457,15 @@
     return /\.html?$/i.test(last) ? last : 'board.html';
   }
 
+  function download(text, name, type) {
+    const link = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([text], { type })),
+      download: name,
+    });
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+  }
+
   function save() {
     clearTimeout(autosaveTimer);
     const pending = saving ? saving.then(writeSave, writeSave) : writeSave();
@@ -357,18 +497,15 @@
       }
       result = 'saved';
     } else {
-      const link = Object.assign(document.createElement('a'), {
-        href: URL.createObjectURL(new Blob([text], { type: 'text/html' })),
-        download: fileName(),
-      });
-      link.click();
-      setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+      download(text, fileName(), 'text/html');
       result = 'downloaded';
     }
     dirty = generation !== savedGeneration;
     renderToolbar(dirty ? undefined : result);
     return result;
   }
+
+  /*HUDDLE_MEETING*/
 
   // ---------- wiring ----------
 
@@ -468,12 +605,24 @@
       return el ? toModel(el) : null;
     },
     patch,
+    undo,
+    add,
+    move,
+    lanes,
+    newId,
+    quick,
     comment,
     serialize,
     save,
+    present,
+    exportNotes,
+    exportSnapshot,
     context: () => structuredClone(context),
     get dirty() {
       return dirty;
+    },
+    get presenting() {
+      return presenting;
     },
     get problems() {
       return problems.map((p) => ({ ...p }));

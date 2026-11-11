@@ -1,7 +1,8 @@
 # huddle-axi
 
-Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end.
-See [bench/REAL-MODEL.md](bench/REAL-MODEL.md) for the real-model measurements,
+Status: step 3 built. The agent loop (`open`, `poll`, `patch`) works end to end, and the
+meeting tools (quick actions, undo, change highlights, present mode, export) are in and
+tested in a headless browser. They haven't been used in a real meeting yet. See [bench/REAL-MODEL.md](bench/REAL-MODEL.md) for the real-model measurements,
 TOON vs HTML comparison and limitations, and [bench/RESULTS.md](bench/RESULTS.md)
 for step 0's measurements of stock Lavish.
 
@@ -36,6 +37,36 @@ Creating a board requires Node.js 22 or later. Open `my-board.html` in Chrome or
   choose the destination on the first save; later saves reuse it. Without that API,
   Save downloads a copy instead. Cards, notes and the change log are included.
   Changes made while a save is in progress remain unsaved; save again to include them.
+
+## In the meeting
+
+These work with or without an agent, and none of them calls a model.
+
+- **Quick actions:** hover a card for a bar of buttons along its bottom edge.
+  - Every card: **↑** and **↓** reorder it in its lane, and **Move to…** sends it to
+    another lane.
+  - Decisions: **Decide** / **Reopen**, and **+Option** (type the label, then Enter).
+    Each option has **−** and **+** for votes and **✓** to choose it. Choosing an option
+    decides the card; choosing it again reopens the decision.
+  - Risks: **Severity** steps through high, medium and low.
+  - Metrics: **−10** and **+10** move the progress bar.
+  - Actions: **Status** steps through not started, in progress and done.
+  - Cards with two or more bullets: **Split** turns each bullet into its own card.
+- **Undo:** **Undo** on a card puts back its previous version, whether the change came from
+  you or the agent. Each card remembers its last 10 versions in the file, so undo still
+  works after a reload. Undo on a card made by Split removes that card. Moves are not
+  undone; move the card back instead.
+- **What changed:** a changed card gets a thick yellow ring for a few seconds, and each
+  part that is new or different (a title, a bullet, an option) is highlighted. It's loud
+  on purpose, so it still shows through a compressed screen share.
+- **Present:** **Present** in the toolbar switches to projector-size type (28px, with
+  **A−** and **A+** to adjust) and lets the board use the full width. It's never saved
+  into the file.
+- **Export:** **Export** in the toolbar downloads either:
+  - meeting notes as Markdown: every card grouped by kind, chosen options ticked, details
+    and notes included;
+  - a read-only snapshot: the board as it looks now, notes included, as plain HTML with
+    no runtime, controls or saved context. It's safe to email.
 
 ## Run a live session with an agent
 
@@ -110,7 +141,15 @@ From the browser console, `huddle` is the page API:
 huddle.patch('<section data-card="c5" data-kind="decision" data-status="decided"><h3>Setup data: progressive wizard</h3></section>')
 huddle.cards()          // [{ id, kind, lane, title }]
 huddle.model('c5')      // the card as the fields above, or null if it doesn't fit them
-huddle.context()        // brief, protocol, threads (notes), revisions (change log)
+huddle.context()        // brief, protocol, threads (notes), revisions (change log), history (undo)
+huddle.undo('c5')       // put back the card's previous version
+huddle.add(html, { lane: 'plan' })   // or { after: 'c14' }; huddle.newId() gives a free id
+huddle.move('c5', { before: 'c7' })  // or { lane: 'plan' } for the end of a lane
+huddle.quick.vote('c5', 1, +1)       // also choose, decide, addOption, severity, progress,
+                                     // actionStatus, split, up, down, moveTo
+huddle.present(true)    // projector-size type; huddle.present(false) to leave
+huddle.exportNotes()    // the Markdown notes, as a string
+huddle.exportSnapshot() // the read-only snapshot, as a string
 ```
 
 A patch that breaks the card rules throws a `HuddleError` and leaves the card unchanged.
