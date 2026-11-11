@@ -17,7 +17,7 @@ const POLL_MS = 8 * 60 * 1000;
 const USAGE = `usage:
   huddle-axi new <file.html> [--title "<title>"] [--sample] [--force]
   huddle-axi open <file.html> [--no-open]
-  huddle-axi poll <file.html> [--timeout-ms <ms>] [--out <card-file>] [--format toon|html]
+  huddle-axi poll <file.html> [--timeout-ms <ms>] [--out <card-file>] [--format html|toon]
   huddle-axi patch <file.html> [--card-file <card-file>] [--note "<what changed>"]
   huddle-axi stop
 
@@ -29,8 +29,8 @@ const USAGE = `usage:
   poll    wait for the facilitator's next note; prints the note and the card it is on
           --timeout-ms  how long to wait (default ${POLL_MS})
           --out         write the card to this file instead of printing it
-          --format      toon (default; falls back to html for cards TOON can't hold) or html
-  patch   replace one card: TOON (as poll prints it) or one <section> element,
+          --format      html (default) or toon (falls back to html for cards TOON can't hold)
+  patch   replace one card, sent the way poll printed it: one <section> element or TOON,
           from --card-file or stdin. The board updates in place and the file is saved.
   stop    stop the background server`;
 
@@ -122,7 +122,7 @@ async function liveServer() {
   return state;
 }
 
-// The card as the agent should edit it: TOON when it fits the card model, else its HTML.
+// The card as the agent should edit it: its HTML, or TOON when asked for and the card fits the model.
 function cardText(note, format) {
   if (note.model && format === 'toon') {
     try {
@@ -135,8 +135,8 @@ function cardText(note, format) {
 async function cmdPoll(path, flags) {
   const timeoutMs = flags.timeoutMs === undefined ? POLL_MS : Number(flags.timeoutMs);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 0) throw new UsageError('--timeout-ms must be a whole number of milliseconds');
-  const wanted = flags.format ?? 'toon';
-  if (!['toon', 'html'].includes(wanted)) throw new UsageError('--format must be toon or html');
+  const wanted = flags.format ?? 'html';
+  if (!['toon', 'html'].includes(wanted)) throw new UsageError('--format must be html or toon');
   const state = await liveServer();
   const { note } = await call(state, '/api/poll', { file: path, timeoutMs });
   if (!note) {

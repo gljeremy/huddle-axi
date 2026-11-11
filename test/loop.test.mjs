@@ -59,7 +59,7 @@ test('a note reaches the agent, and the agent rewrites the card in place', async
   await browser.call(() => { window.notReloaded = true; });
   const cardFile = join(dir, 'c5.toon');
   const started = Date.now();
-  const polling = run(['poll', board, '--out', cardFile, '--timeout-ms', '20000']);
+  const polling = run(['poll', board, '--format', 'toon', '--out', cardFile, '--timeout-ms', '20000']);
   await browser.call(() => huddle.comment('c5', 'We picked the wizard. Mark it decided.'));
   const polled = await polling;
   const noteMs = Date.now() - started;
@@ -105,7 +105,7 @@ test('a note reaches the agent, and the agent rewrites the card in place', async
 });
 
 test('a second note on the card carries the earlier thread', async () => {
-  const polling = run(['poll', board, '--timeout-ms', '20000']);
+  const polling = run(['poll', board, '--format', 'toon', '--timeout-ms', '20000']);
   await browser.call(() => huddle.comment('c5', 'Add who owns the wizard.'));
   const polled = await polling;
   const [head, card] = polled.stdout.split('\n---\n');
@@ -140,7 +140,7 @@ test('queued notes receive the current browser card in both wire formats', async
       huddle.comment('c5', 'Add the owner.');
       return count;
     }, format);
-    const first = await run(['poll', board, '--timeout-ms', '20000']);
+    const first = await run(['poll', board, '--format', 'toon', '--timeout-ms', '20000']);
     assert.equal(first.status, 0, first.stderr);
     const [firstHead] = first.stdout.split('\n---\n');
     assert.equal(decode(firstHead).note, 'Mark decided.');
@@ -148,7 +148,7 @@ test('queued notes receive the current browser card in both wire formats', async
     const content = format === 'toon' ? '<p>Decided</p>' : '<ul><li>Decided</li></ul><p>After list</p>';
     const patched = await run(['patch', board], `<section data-card="c5" data-kind="decision" data-status="decided"><h3>Current decision</h3>${content}</section>`);
     assert.equal(patched.status, 0, patched.stderr);
-    const second = await run(['poll', board, '--timeout-ms', '20000']);
+    const second = await run(['poll', board, '--format', 'toon', '--timeout-ms', '20000']);
     assert.equal(second.status, 0, second.stderr);
     const [head, card] = second.stdout.split('\n---\n');
     const info = decode(head);
@@ -166,9 +166,9 @@ test('queued notes receive the current browser card in both wire formats', async
   }
 });
 
-test('a card that does not fit the model is handed to the agent as HTML', async () => {
+test('with --format toon, a card that does not fit the model is still handed over as HTML', async () => {
   await browser.call(() => huddle.patch('<section data-card="c13" data-kind="note"><h3>Live chat</h3><ul><li>one</li></ul><p>after the list</p></section>'));
-  const polling = run(['poll', board, '--timeout-ms', '20000']);
+  const polling = run(['poll', board, '--format', 'toon', '--timeout-ms', '20000']);
   await browser.call(() => huddle.comment('c13', 'Tidy this up.'));
   const [head, card] = (await polling).stdout.split('\n---\n');
   assert.equal(decode(head).format, 'html');
@@ -177,11 +177,11 @@ test('a card that does not fit the model is handed to the agent as HTML', async 
   assert.equal(patched.status, 0, patched.stderr);
 });
 
-test('poll --format html hands over a card that fits TOON as its HTML, and health counts the waiting poll', async () => {
+test('by default poll hands over a card that fits TOON as its HTML, and health counts the waiting poll', async () => {
   const { port, token } = JSON.parse(readFileSync(join(env.HUDDLE_STATE_DIR, 'server.json'), 'utf8'));
   const health = async () => (await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { authorization: `Bearer ${token}` } })).json();
   assert.equal((await health()).waiting, 0);
-  const polling = run(['poll', board, '--format', 'html', '--timeout-ms', '20000']);
+  const polling = run(['poll', board, '--timeout-ms', '20000']);
   const start = Date.now();
   while ((await health()).waiting !== 1) {
     assert.ok(Date.now() - start < 5000, 'the poll never showed up as waiting');
@@ -196,7 +196,7 @@ test('poll --format html hands over a card that fits TOON as its HTML, and healt
   assert.equal(patched.status, 0, patched.stderr);
   const bad = await run(['poll', board, '--format', 'xml']);
   assert.equal(bad.status, 2);
-  assert.match(bad.stderr, /--format must be toon or html/);
+  assert.match(bad.stderr, /--format must be html or toon/);
 });
 
 test('a bad patch is refused with a reason the agent can fix, and nothing changes', async () => {
@@ -280,7 +280,7 @@ test('poll falls back to the queued snapshot when a browser does not answer', as
       body: JSON.stringify({ card: 'c1', text: 'Offline note', model: { id: 'c1', kind: 'note', title: 'Queued title' }, html: '<section data-card="c1" data-kind="note"><h3>Queued title</h3></section>' }),
     });
     assert.equal(queued.status, 200);
-    const result = await run(['poll', other, '--timeout-ms', '5000']);
+    const result = await run(['poll', other, '--format', 'toon', '--timeout-ms', '5000']);
     assert.equal(result.status, 0, result.stderr);
     const [head, card] = result.stdout.split('\n---\n');
     assert.equal(decode(head).note, 'Offline note');

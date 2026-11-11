@@ -58,7 +58,7 @@ While served, the board is live:
 The agent runs a loop:
 
 ```bash
-node src/cli.mjs poll my-board.html --out card.toon
+node src/cli.mjs poll my-board.html --out card.html
 ```
 
 `poll` waits for the next note (8 minutes by default, `--timeout-ms` to change) and prints
@@ -66,7 +66,12 @@ the note, the earlier notes on that card, the board's title and brief, and the c
 itself. At delivery it asks the browser for the current card, so queued notes include
 previous rewrites; if the browser does not answer within a second, it uses the snapshot
 captured when the note was submitted. With `--out`, the card goes to that file, ready
-for a targeted edit. A card looks like this:
+for a targeted edit.
+
+The card comes as its `<section>` HTML, following the card rules below. In the step 2
+measurement a fast model edited HTML cards about 1 s faster than TOON, with no rejected
+patches in either ([bench/REAL-MODEL.md](bench/REAL-MODEL.md)). `poll --format toon`
+prints the card as TOON instead, which is shorter. A card in TOON looks like this:
 
 ```
 id: c5
@@ -84,15 +89,14 @@ meta[1]{key,value}:
 
 The field reference and HTML mapping live in [src/card-model.mjs](src/card-model.mjs).
 An `html` card uses the `html` field for its content, alongside its card attributes.
-`poll --format toon` is the default: a card whose markup doesn't fit the model is
-printed as its `<section>` HTML instead (`format: html`). `poll --format html` prints
-every card that way, including when using `--out`.
+With `--format toon`, a card whose markup doesn't fit the model is still printed as its
+`<section>` HTML (`format: html`). The header's `format` always says which you got.
 
 ```bash
-node src/cli.mjs patch my-board.html --card-file card.toon --note "marked decided"
+node src/cli.mjs patch my-board.html --card-file card.html --note "marked decided"
 ```
 
-`patch` takes the edited card as TOON or as one `<section>`, from `--card-file` or
+`patch` takes the edited card as one `<section>` or as TOON, from `--card-file` or
 stdin. It returns once the card has changed on screen and the file is saved. A bad card
 is refused with the reason (a TOON line number, or the card rule it breaks), and the
 board is left as it was. If saving fails after applying a valid card, `patch` exits
