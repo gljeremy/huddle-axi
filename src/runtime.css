@@ -10,7 +10,7 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--bg); color: var(--ink); }
-/* Present mode sets --huddle-type; everything else is in em, so the whole board scales with it. */
+/* Present mode sets --huddle-type; em-based type and lane widths scale together. */
 body { margin: 0; font: var(--huddle-type, 19px)/1.45 var(--sans); background: var(--bg); }
 
 [data-huddle-board] { max-width: 1440px; margin: 0 auto; padding: 28px 24px 110px; }

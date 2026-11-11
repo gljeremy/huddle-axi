@@ -51,22 +51,26 @@ These work with or without an agent, and none of them calls a model.
   - Risks: **Severity** steps through high, medium and low.
   - Metrics: **−10** and **+10** move the progress bar.
   - Actions: **Status** steps through not started, in progress and done.
-  - Cards with two or more bullets: **Split** turns each bullet into its own card.
+  - Non-`html` cards with two or more bullets: **Split** removes the bullets from the
+    original and makes a card of the same kind for each, directly after it.
 - **Undo:** **Undo** on a card puts back its previous version, whether the change came from
   you or the agent. Each card remembers its last 10 versions in the file, so undo still
-  works after a reload. Undo on a card made by Split removes that card. Moves are not
-  undone; move the card back instead.
-- **What changed:** a changed card gets a thick yellow ring for a few seconds, and each
-  part that is new or different (a title, a bullet, an option) is highlighted. It's loud
-  on purpose, so it still shows through a compressed screen share.
+  works after a reload. To undo Split, undo each new card to remove it, then undo the
+  original to restore its bullets. Moves are not undone; move the card back instead.
+- **What changed:** a changed card gets a thick yellow ring for a few seconds. On
+  non-`html` cards, each part that is new or different (a title, a bullet, an option)
+  is also highlighted. It's loud on purpose, so it still shows through a compressed
+  screen share.
 - **Present:** **Present** in the toolbar switches to projector-size type (28px, with
   **A−** and **A+** to adjust) and lets the board use the full width. It's never saved
   into the file.
 - **Export:** **Export** in the toolbar downloads either:
   - meeting notes as Markdown: every card grouped by kind, chosen options ticked, details
-    and notes included;
-  - a read-only snapshot: the board as it looks now, notes included, as plain HTML with
-    no runtime, controls or saved context. It's safe to email.
+    and notes included. Custom `html` content is not reproduced in full; those entries
+    point back to the board;
+  - a read-only snapshot: the current cards and notes as plain HTML with no runtime,
+    controls or saved context. Present-mode sizing and change highlights are not
+    included. It's safe to email.
 
 ## Run a live session with an agent
 
@@ -85,6 +89,9 @@ While served, the board is live:
   there is no Save step. The file stays a plain portable board you can open later
   without the server.
 - A card the agent is working on gets a dashed, pulsing outline.
+
+Undo history increases the file size. If a board becomes too large for a live save,
+the toolbar reports the failure and the changes remain unsaved in the tab.
 
 The agent runs a loop:
 
@@ -145,8 +152,9 @@ huddle.context()        // brief, protocol, threads (notes), revisions (change l
 huddle.undo('c5')       // put back the card's previous version
 huddle.add(html, { lane: 'plan' })   // or { after: 'c14' }; huddle.newId() gives a free id
 huddle.move('c5', { before: 'c7' })  // or { lane: 'plan' } for the end of a lane
-huddle.quick.vote('c5', 1, +1)       // also choose, decide, addOption, severity, progress,
-                                     // actionStatus, split, up, down, moveTo
+huddle.quick.vote('c5', 1, +1) // second option (zero-based index); also choose, decide,
+                             // addOption, severity, progress, actionStatus, split,
+                             // up, down, moveTo
 huddle.present(true)    // projector-size type; huddle.present(false) to leave
 huddle.exportNotes()    // the Markdown notes, as a string
 huddle.exportSnapshot() // the read-only snapshot, as a string

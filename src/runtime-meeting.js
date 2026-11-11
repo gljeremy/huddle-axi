@@ -336,7 +336,7 @@
     return `${lines.join('\n')}\n`;
   }
 
-  // The board as it looks now, with its notes, but no runtime, controls or context block.
+  // Keep the cards and visible notes, but not transient presentation state or editable context.
   function exportSnapshot() {
     const root = document.documentElement.cloneNode(true);
     root.querySelectorAll('script, style[data-huddle-chrome], .huddle-toolbar, .huddle-note-btn, .huddle-note, .huddle-quick, .huddle-opt, .huddle-option-input').forEach((n) => n.remove());
