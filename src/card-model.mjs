@@ -1,4 +1,4 @@
-// A card as plain data, and its two encodings: TOON for the agent, restricted HTML for the file.
+// A card as plain data, with TOON and restricted HTML encodings.
 // The browser runtime builds the same shape from the DOM (toModel in runtime.js).
 //
 //   id, kind, status?, severity?, progress?      card attributes

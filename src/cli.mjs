@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // huddle-axi CLI: make a board, open it live, and run the agent's poll/patch loop.
-// Output is TOON (https://toonformat.dev) so an agent can read it directly.
+// Response metadata is TOON (https://toonformat.dev); see README.md for card formats.
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';

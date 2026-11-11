@@ -68,10 +68,9 @@ previous rewrites; if the browser does not answer within a second, it uses the s
 captured when the note was submitted. With `--out`, the card goes to that file, ready
 for a targeted edit.
 
-The card comes as its `<section>` HTML, following the card rules below. In the step 2
-measurement a fast model edited HTML cards about 1 s faster than TOON, with no rejected
-patches in either ([bench/REAL-MODEL.md](bench/REAL-MODEL.md)). `poll --format toon`
-prints the card as TOON instead, which is shorter. A card in TOON looks like this:
+The card comes as its `<section>` HTML, following the card rules below. This default
+follows the [step 2 format comparison](bench/REAL-MODEL.md#verdict).
+`poll --format toon` opts into TOON instead. A card in TOON looks like this:
 
 ```
 id: c5

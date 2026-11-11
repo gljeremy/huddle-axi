@@ -44,7 +44,7 @@ The notes are realistic small edits:
 
 The agent got the same instructions in every run. Only the board path and the format
 changed. The instructions said:
-- use `poll` (with `--format html` for the HTML runs);
+- use `poll` in the run's format;
 - send the whole edited card back through [`patch.mjs`](patch.mjs), which is `patch` with
   a log of every attempt so rejected patches can be counted;
 - follow the board's card rules.

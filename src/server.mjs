@@ -76,7 +76,7 @@ async function writeAtomic(file, text) {
   }
 }
 
-// Turns what the agent sent into one card's HTML. TOON is the default; markup is accepted as-is.
+// Markup passes through here; the browser validates it before applying the patch.
 export function patchBodyToHtml(body) {
   const text = String(body ?? '').trim();
   if (!text) throw new HttpError(400, 'the patch is empty');
