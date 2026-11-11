@@ -25,7 +25,10 @@ if (!['toon', 'html'].includes(format) || !outArg) {
 }
 const CLI = fileURLToPath(new URL('../src/cli.mjs', import.meta.url));
 const cli = (...args) => spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
-const board = join(mkdtempSync(join(tmpdir(), `huddle-bench-${format}-`)), 'board.html');
+const dir = mkdtempSync(join(tmpdir(), `huddle-bench-${format}-`));
+process.env.HUDDLE_STATE_DIR = join(dir, 'state');
+const board = join(dir, 'board.html');
+const shellQuote = (path) => `'${path.replace(/\\/g, '/').replace(/'/g, "'\\''")}'`;
 const ROUND_MS = 180_000;
 
 async function waiting() {
@@ -54,6 +57,7 @@ try {
     const check = () => (document.querySelector('.huddle-state')?.textContent.includes('live (connected)') ? ok() : setTimeout(check, 20));
     check();
   }));
+  console.log(`Agent shell setup (bash; applies to both poll and patch):\nexport HUDDLE_STATE_DIR=${shellQuote(process.env.HUDDLE_STATE_DIR)}\nnode ${shellQuote(CLI)} poll ${shellQuote(board)} --format ${format}\nnode ${shellQuote(fileURLToPath(new URL('./patch.mjs', import.meta.url)))} ${shellQuote(board)} < card`);
   console.log(`ready: ${board.replace(/\\/g, '/')}`);
 
   for (const [i, task] of TASKS.entries()) {
