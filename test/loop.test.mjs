@@ -177,6 +177,28 @@ test('a card that does not fit the model is handed to the agent as HTML', async 
   assert.equal(patched.status, 0, patched.stderr);
 });
 
+test('poll --format html hands over a card that fits TOON as its HTML, and health counts the waiting poll', async () => {
+  const { port, token } = JSON.parse(readFileSync(join(env.HUDDLE_STATE_DIR, 'server.json'), 'utf8'));
+  const health = async () => (await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { authorization: `Bearer ${token}` } })).json();
+  assert.equal((await health()).waiting, 0);
+  const polling = run(['poll', board, '--format', 'html', '--timeout-ms', '20000']);
+  const start = Date.now();
+  while ((await health()).waiting !== 1) {
+    assert.ok(Date.now() - start < 5000, 'the poll never showed up as waiting');
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  await browser.call(() => huddle.comment('c12', 'Shorten this.'));
+  const [head, card] = (await polling).stdout.split('\n---\n');
+  assert.equal(decode(head).format, 'html');
+  assert.equal(squash(card), squash(await browser.call(() => huddle.get('c12'))));
+  assert.equal((await health()).waiting, 0);
+  const patched = await run(['patch', board], '<section data-card="c12" data-kind="idea"><h3>Ask the role</h3><p>Role beats headcount.</p></section>');
+  assert.equal(patched.status, 0, patched.stderr);
+  const bad = await run(['poll', board, '--format', 'xml']);
+  assert.equal(bad.status, 2);
+  assert.match(bad.stderr, /--format must be toon or html/);
+});
+
 test('a bad patch is refused with a reason the agent can fix, and nothing changes', async () => {
   const before = await browser.call(() => huddle.get('c6'));
   const syntax = await run(['patch', board], 'id: c6\nkind: decision\ntitle: x\nbody[2]: only one');

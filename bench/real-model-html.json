@@ -1,0 +1,427 @@
+{
+  "format": "html",
+  "at": "2026-11-11T03:53:32.427Z",
+  "rounds": [
+    {
+      "card": "c5",
+      "note": "We picked the progressive wizard. Mark it decided.",
+      "sent": 1794369102375,
+      "claimedMs": 29,
+      "visibleMs": 4196,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c5\nkind: decision\nstatus: open\ntitle: How do we collect setup data?\nbody[1]: \"We need the data source, team size and main use case before the first dashboard is useful.\"\noptions[3]{label,detail,votes,chosen}:\n  Long form up front,Everything on one page before the product loads,2,false\n  Progressive wizard,\"Three short steps, skippable, resumable later\",5,false\n  Import from CSV,Fastest for teams that already have a spreadsheet,1,false\nmeta[1]{key,value}:\n  decide by,end of session\n",
+        "html": "<section data-card=\"c5\" data-kind=\"decision\" data-status=\"open\">\n<h3>How do we collect setup data?</h3>\n<p>We need the data source, team size and main use case before the first dashboard is useful.</p>\n<ol>\n<li data-votes=\"2\">Long form up front<small>Everything on one page before the product loads</small></li>\n<li data-votes=\"5\">Progressive wizard<small>Three short steps, skippable, resumable later</small></li>\n<li data-votes=\"1\">Import from CSV<small>Fastest for teams that already have a spreadsheet</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c5\" data-kind=\"decision\" data-status=\"decided\">\n<h3>How do we collect setup data?</h3>\n<p>We need the data source, team size and main use case before the first dashboard is useful.</p>\n<ol>\n<li data-votes=\"2\">Long form up front<small>Everything on one page before the product loads</small></li>\n<li data-votes=\"5\" data-chosen=\"\">Progressive wizard<small>Three short steps, skippable, resumable later</small></li>\n<li data-votes=\"1\">Import from CSV<small>Fastest for teams that already have a spreadsheet</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 4006,
+          "endMs": 4215,
+          "status": 0,
+          "body": "<section data-card=\"c5\" data-kind=\"decision\" data-status=\"decided\">\n<h3>How do we collect setup data?</h3>\n<p>We need the data source, team size and main use case before the first dashboard is useful.</p>\n<ol>\n<li data-votes=\"2\">Long form up front<small>Everything on one page before the product loads</small></li>\n<li data-votes=\"5\" data-chosen>Progressive wizard<small>Three short steps, skippable, resumable later</small></li>\n<li data-votes=\"1\">Import from CSV<small>Fastest for teams that already have a spreadsheet</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c3",
+      "note": "Activation is up to 44% now. Update the number.",
+      "sent": 1794369109189,
+      "claimedMs": 11,
+      "visibleMs": 4160,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c3\nkind: metric\nprogress: 68\ntitle: Activation rate\nvalue: \"41\"\ndisplay: 41%\ncaption: target 60% · baseline last 90 days\nbody[1]: A dashboard with at least one live data source within 7 days of signup.\n",
+        "html": "<section data-card=\"c3\" data-kind=\"metric\" data-progress=\"68\">\n<h3>Activation rate</h3>\n<data value=\"41\">41%</data>\n<small>target 60% · baseline last 90 days</small>\n<p>A dashboard with at least one live data source within 7 days of signup.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c3\" data-kind=\"metric\" data-progress=\"68\">\n<h3>Activation rate</h3>\n<data value=\"44\">44%</data>\n<small>target 60% · baseline last 90 days</small>\n<p>A dashboard with at least one live data source within 7 days of signup.</p>\n</section>",
+      "attempts": [
+        {
+          "startMs": 3966,
+          "endMs": 4180,
+          "status": 0,
+          "body": "<section data-card=\"c3\" data-kind=\"metric\" data-progress=\"68\">\n<h3>Activation rate</h3>\n<data value=\"44\">44%</data>\n<small>target 60% · baseline last 90 days</small>\n<p>A dashboard with at least one live data source within 7 days of signup.</p>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c9",
+      "note": "Add a third mitigation: let admins pre-approve data access.",
+      "sent": 1794369116035,
+      "claimedMs": 11,
+      "visibleMs": 3387,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c9\nkind: risk\nseverity: high\ntitle: Data access is the real bottleneck\nbody[1]: Most of the 23 minutes is people waiting for credentials from their own IT team.\nbullets[2]: Offer demo data so they can explore while they wait,Send a ready-made request email they can forward to IT\nmeta[1]{key,value}:\n  raised by,Support\n",
+        "html": "<section data-card=\"c9\" data-kind=\"risk\" data-severity=\"high\">\n<h3>Data access is the real bottleneck</h3>\n<p>Most of the 23 minutes is people waiting for credentials from their own IT team.</p>\n<ul>\n<li>Offer demo data so they can explore while they wait</li>\n<li>Send a ready-made request email they can forward to IT</li>\n</ul>\n<dl><dt>raised by</dt><dd>Support</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c9\" data-kind=\"risk\" data-severity=\"high\">\n<h3>Data access is the real bottleneck</h3>\n<p>Most of the 23 minutes is people waiting for credentials from their own IT team.</p>\n<ul>\n<li>Offer demo data so they can explore while they wait</li>\n<li>Send a ready-made request email they can forward to IT</li>\n<li>Let admins pre-approve data access</li>\n</ul>\n<dl><dt>raised by</dt><dd>Support</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 3197,
+          "endMs": 3409,
+          "status": 0,
+          "body": "<section data-card=\"c9\" data-kind=\"risk\" data-severity=\"high\">\n<h3>Data access is the real bottleneck</h3>\n<p>Most of the 23 minutes is people waiting for credentials from their own IT team.</p>\n<ul>\n<li>Offer demo data so they can explore while they wait</li>\n<li>Send a ready-made request email they can forward to IT</li>\n<li>Let admins pre-approve data access</li>\n</ul>\n<dl><dt>raised by</dt><dd>Support</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c11",
+      "note": "Retitle this to 'Invite a teammate during setup'.",
+      "sent": 1794369121602,
+      "claimedMs": 11,
+      "visibleMs": 2785,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c11\nkind: idea\ntitle: Invite a teammate as a setup step\nbody[1]: Teams with two or more active people in week one retain much better.\n",
+        "html": "<section data-card=\"c11\" data-kind=\"idea\">\n<h3>Invite a teammate as a setup step</h3>\n<p>Teams with two or more active people in week one retain much better.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c11\" data-kind=\"idea\">\n<h3>Invite a teammate during setup</h3>\n<p>Teams with two or more active people in week one retain much better.</p>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2601,
+          "endMs": 2804,
+          "status": 0,
+          "body": "<section data-card=\"c11\" data-kind=\"idea\">\n<h3>Invite a teammate during setup</h3>\n<p>Teams with two or more active people in week one retain much better.</p>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c14",
+      "note": "This one is done now.",
+      "sent": 1794369126679,
+      "claimedMs": 11,
+      "visibleMs": 2997,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c14\nkind: action\ntitle: Draft the three wizard steps as wireframes\nmeta[3]{key,value}:\n  owner,Design\n  due,before session 3\n  status,in progress\n",
+        "html": "<section data-card=\"c14\" data-kind=\"action\">\n<h3>Draft the three wizard steps as wireframes</h3>\n<dl><dt>owner</dt><dd>Design</dd><dt>due</dt><dd>before session 3</dd><dt>status</dt><dd>in progress</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c14\" data-kind=\"action\">\n<h3>Draft the three wizard steps as wireframes</h3>\n<dl><dt>owner</dt><dd>Design</dd><dt>due</dt><dd>before session 3</dd><dt>status</dt><dd>done</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2813,
+          "endMs": 3018,
+          "status": 0,
+          "body": "<section data-card=\"c14\" data-kind=\"action\">\n<h3>Draft the three wizard steps as wireframes</h3>\n<dl><dt>owner</dt><dd>Design</dd><dt>due</dt><dd>before session 3</dd><dt>status</dt><dd>done</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c6",
+      "note": "Add one vote to the template gallery.",
+      "sent": 1794369131948,
+      "claimedMs": 40,
+      "visibleMs": 3118,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c6\nkind: decision\nstatus: open\ntitle: What does an empty account show?\nbody[1]: \"Today a new account opens on a blank canvas, and a lot of people bounce right there.\"\noptions[3]{label,detail,votes,chosen}:\n  Sample dashboard with demo data,\"Clearly labeled, one click to swap in real data\",4,false\n  Template gallery,Pick a starting point by role,3,false\n  Keep the blank canvas,Add a short checklist in the sidebar,0,false\nmeta[1]{key,value}:\n  decide by,session 3\n",
+        "html": "<section data-card=\"c6\" data-kind=\"decision\" data-status=\"open\">\n<h3>What does an empty account show?</h3>\n<p>Today a new account opens on a blank canvas, and a lot of people bounce right there.</p>\n<ol>\n<li data-votes=\"4\">Sample dashboard with demo data<small>Clearly labeled, one click to swap in real data</small></li>\n<li data-votes=\"3\">Template gallery<small>Pick a starting point by role</small></li>\n<li data-votes=\"0\">Keep the blank canvas<small>Add a short checklist in the sidebar</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>session 3</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c6\" data-kind=\"decision\" data-status=\"open\">\n<h3>What does an empty account show?</h3>\n<p>Today a new account opens on a blank canvas, and a lot of people bounce right there.</p>\n<ol>\n<li data-votes=\"4\">Sample dashboard with demo data<small>Clearly labeled, one click to swap in real data</small></li>\n<li data-votes=\"4\">Template gallery<small>Pick a starting point by role</small></li>\n<li data-votes=\"0\">Keep the blank canvas<small>Add a short checklist in the sidebar</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>session 3</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2921,
+          "endMs": 3140,
+          "status": 0,
+          "body": "<section data-card=\"c6\" data-kind=\"decision\" data-status=\"open\">\n<h3>What does an empty account show?</h3>\n<p>Today a new account opens on a blank canvas, and a lot of people bounce right there.</p>\n<ol>\n<li data-votes=\"4\">Sample dashboard with demo data<small>Clearly labeled, one click to swap in real data</small></li>\n<li data-votes=\"4\">Template gallery<small>Pick a starting point by role</small></li>\n<li data-votes=\"0\">Keep the blank canvas<small>Add a short checklist in the sidebar</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>session 3</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c10",
+      "note": "Lower the severity to low.",
+      "sent": 1794369138306,
+      "claimedMs": 12,
+      "visibleMs": 2614,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c10\nkind: risk\nseverity: medium\ntitle: Demo data gets mistaken for real data\nbody[1]: \"If sample numbers look too real, someone will screenshot them into a deck.\"\nmeta[1]{key,value}:\n  linked,c6\n",
+        "html": "<section data-card=\"c10\" data-kind=\"risk\" data-severity=\"medium\">\n<h3>Demo data gets mistaken for real data</h3>\n<p>If sample numbers look too real, someone will screenshot them into a deck.</p>\n<dl><dt>linked</dt><dd>c6</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c10\" data-kind=\"risk\" data-severity=\"low\">\n<h3>Demo data gets mistaken for real data</h3>\n<p>If sample numbers look too real, someone will screenshot them into a deck.</p>\n<dl><dt>linked</dt><dd>c6</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2426,
+          "endMs": 2640,
+          "status": 0,
+          "body": "<section data-card=\"c10\" data-kind=\"risk\" data-severity=\"low\">\n<h3>Demo data gets mistaken for real data</h3>\n<p>If sample numbers look too real, someone will screenshot them into a deck.</p>\n<dl><dt>linked</dt><dd>c6</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c2",
+      "note": "Product owns this now, not Design.",
+      "sent": 1794369143116,
+      "claimedMs": 13,
+      "visibleMs": 2675,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c2\nkind: goal\ntitle: One path for every signup source\nbody[1]: \"Self-serve, invited teammates and SSO seats all land in the same first-run flow.\"\nmeta[1]{key,value}:\n  owner,Design\n",
+        "html": "<section data-card=\"c2\" data-kind=\"goal\">\n<h3>One path for every signup source</h3>\n<p>Self-serve, invited teammates and SSO seats all land in the same first-run flow.</p>\n<dl><dt>owner</dt><dd>Design</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c2\" data-kind=\"goal\">\n<h3>One path for every signup source</h3>\n<p>Self-serve, invited teammates and SSO seats all land in the same first-run flow.</p>\n<dl><dt>owner</dt><dd>Product</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2489,
+          "endMs": 2692,
+          "status": 0,
+          "body": "<section data-card=\"c2\" data-kind=\"goal\">\n<h3>One path for every signup source</h3>\n<p>Self-serve, invited teammates and SSO seats all land in the same first-run flow.</p>\n<dl><dt>owner</dt><dd>Product</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c7",
+      "note": "Add a third option, 'No onboarding': admins send their own welcome email. No votes yet.",
+      "sent": 1794369148145,
+      "claimedMs": 12,
+      "visibleMs": 3137,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c7\nkind: decision\nstatus: open\ntitle: Do SSO seats get the wizard?\nbody[1]: \"SSO users are provisioned by an admin, so their workspace already exists.\"\noptions[2]{label,detail,votes,chosen}:\n  Full wizard,\"Same as self-serve, admin settings pre-filled\",2,false\n  Short personal tour,\"Skip workspace setup, keep the personal steps\",4,false\nmeta[1]{key,value}:\n  decide by,end of session\n",
+        "html": "<section data-card=\"c7\" data-kind=\"decision\" data-status=\"open\">\n<h3>Do SSO seats get the wizard?</h3>\n<p>SSO users are provisioned by an admin, so their workspace already exists.</p>\n<ol>\n<li data-votes=\"2\">Full wizard<small>Same as self-serve, admin settings pre-filled</small></li>\n<li data-votes=\"4\">Short personal tour<small>Skip workspace setup, keep the personal steps</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c7\" data-kind=\"decision\" data-status=\"open\">\n<h3>Do SSO seats get the wizard?</h3>\n<p>SSO users are provisioned by an admin, so their workspace already exists.</p>\n<ol>\n<li data-votes=\"2\">Full wizard<small>Same as self-serve, admin settings pre-filled</small></li>\n<li data-votes=\"4\">Short personal tour<small>Skip workspace setup, keep the personal steps</small></li>\n<li data-votes=\"0\">No onboarding<small>Admins send their own welcome email</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2952,
+          "endMs": 3158,
+          "status": 0,
+          "body": "<section data-card=\"c7\" data-kind=\"decision\" data-status=\"open\">\n<h3>Do SSO seats get the wizard?</h3>\n<p>SSO users are provisioned by an admin, so their workspace already exists.</p>\n<ol>\n<li data-votes=\"2\">Full wizard<small>Same as self-serve, admin settings pre-filled</small></li>\n<li data-votes=\"4\">Short personal tour<small>Skip workspace setup, keep the personal steps</small></li>\n<li data-votes=\"0\">No onboarding<small>Admins send their own welcome email</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c4",
+      "note": "Set the progress to 30.",
+      "sent": 1794369153583,
+      "claimedMs": 11,
+      "visibleMs": 2601,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c4\nkind: metric\nprogress: 22\ntitle: Median time to first dashboard\nvalue: \"23\"\ndisplay: 23 min\ncaption: target 5 min · p90 is 3.2 days\nbody[1]: The long tail is mostly people waiting on data access.\n",
+        "html": "<section data-card=\"c4\" data-kind=\"metric\" data-progress=\"22\">\n<h3>Median time to first dashboard</h3>\n<data value=\"23\">23 min</data>\n<small>target 5 min · p90 is 3.2 days</small>\n<p>The long tail is mostly people waiting on data access.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c4\" data-kind=\"metric\" data-progress=\"30\">\n<h3>Median time to first dashboard</h3>\n<data value=\"23\">23 min</data>\n<small>target 5 min · p90 is 3.2 days</small>\n<p>The long tail is mostly people waiting on data access.</p>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2414,
+          "endMs": 2622,
+          "status": 0,
+          "body": "<section data-card=\"c4\" data-kind=\"metric\" data-progress=\"30\">\n<h3>Median time to first dashboard</h3>\n<data value=\"23\">23 min</data>\n<small>target 5 min · p90 is 3.2 days</small>\n<p>The long tail is mostly people waiting on data access.</p>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c12",
+      "note": "Add a sentence saying Sales eng agrees this is easier to ask.",
+      "sent": 1794369158681,
+      "claimedMs": 11,
+      "visibleMs": 2738,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c12\nkind: idea\ntitle: \"Ask the role, not the company size\"\nbody[1]: Role predicts which dashboard people want far better than headcount does.\n",
+        "html": "<section data-card=\"c12\" data-kind=\"idea\">\n<h3>Ask the role, not the company size</h3>\n<p>Role predicts which dashboard people want far better than headcount does.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c12\" data-kind=\"idea\">\n<h3>Ask the role, not the company size</h3>\n<p>Role predicts which dashboard people want far better than headcount does. Sales eng agrees this is easier to ask.</p>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2528,
+          "endMs": 2764,
+          "status": 0,
+          "body": "<section data-card=\"c12\" data-kind=\"idea\">\n<h3>Ask the role, not the company size</h3>\n<p>Role predicts which dashboard people want far better than headcount does. Sales eng agrees this is easier to ask.</p>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c13",
+      "note": "Unpark this: say we'll pilot it in July instead.",
+      "sent": 1794369163559,
+      "claimedMs": 11,
+      "visibleMs": 2987,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c13\nkind: note\ntitle: Live chat only in the first hour\nbody[1]: Support has capacity for a narrow window. Parked until session 3.\n",
+        "html": "<section data-card=\"c13\" data-kind=\"note\">\n<h3>Live chat only in the first hour</h3>\n<p>Support has capacity for a narrow window. Parked until session 3.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c13\" data-kind=\"note\">\n<h3>Live chat only in the first hour</h3>\n<p>Support has capacity for a narrow window. We'll pilot it in July instead.</p>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2809,
+          "endMs": 3012,
+          "status": 0,
+          "body": "<section data-card=\"c13\" data-kind=\"note\">\n<h3>Live chat only in the first hour</h3>\n<p>Support has capacity for a narrow window. We'll pilot it in July instead.</p>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c15",
+      "note": "Support owns this now, due end of month.",
+      "sent": 1794369168896,
+      "claimedMs": 11,
+      "visibleMs": 2940,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c15\nkind: action\ntitle: List what SSO admins already configure\nmeta[3]{key,value}:\n  owner,Sales eng\n  due,next week\n  status,not started\n",
+        "html": "<section data-card=\"c15\" data-kind=\"action\">\n<h3>List what SSO admins already configure</h3>\n<dl><dt>owner</dt><dd>Sales eng</dd><dt>due</dt><dd>next week</dd><dt>status</dt><dd>not started</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c15\" data-kind=\"action\">\n<h3>List what SSO admins already configure</h3>\n<dl><dt>owner</dt><dd>Support</dd><dt>due</dt><dd>end of month</dd><dt>status</dt><dd>not started</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2759,
+          "endMs": 2961,
+          "status": 0,
+          "body": "<section data-card=\"c15\" data-kind=\"action\">\n<h3>List what SSO admins already configure</h3>\n<dl><dt>owner</dt><dd>Support</dd><dt>due</dt><dd>end of month</dd><dt>status</dt><dd>not started</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c8",
+      "note": "Link this to c2 as well as c7.",
+      "sent": 1794369174086,
+      "claimedMs": 11,
+      "visibleMs": 3391,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c8\nkind: risk\nseverity: high\ntitle: SSO users skip onboarding entirely\nbody[1]: \"About a third of seats arrive by SSO and never see onboarding, so a self-serve redesign misses them.\"\nmeta[1]{key,value}:\n  linked,c7\n",
+        "html": "<section data-card=\"c8\" data-kind=\"risk\" data-severity=\"high\">\n<h3>SSO users skip onboarding entirely</h3>\n<p>About a third of seats arrive by SSO and never see onboarding, so a self-serve redesign misses them.</p>\n<dl><dt>linked</dt><dd>c7</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c8\" data-kind=\"risk\" data-severity=\"high\">\n<h3>SSO users skip onboarding entirely</h3>\n<p>About a third of seats arrive by SSO and never see onboarding, so a self-serve redesign misses them.</p>\n<dl><dt>linked</dt><dd>c7, c2</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 3205,
+          "endMs": 3412,
+          "status": 0,
+          "body": "<section data-card=\"c8\" data-kind=\"risk\" data-severity=\"high\">\n<h3>SSO users skip onboarding entirely</h3>\n<p>About a third of seats arrive by SSO and never see onboarding, so a self-serve redesign misses them.</p>\n<dl><dt>linked</dt><dd>c7, c2</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c1",
+      "note": "Add a detail row 'reviewed: session 2'.",
+      "sent": 1794369179722,
+      "claimedMs": 12,
+      "visibleMs": 2676,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c1\nkind: goal\ntitle: Cut time-to-first-value\nbody[1]: \"New users reach a working dashboard in under 5 minutes, without a sales call or a support ticket.\"\nmeta[2]{key,value}:\n  owner,Product\n  agreed,session 1\n",
+        "html": "<section data-card=\"c1\" data-kind=\"goal\">\n<h3>Cut time-to-first-value</h3>\n<p>New users reach a working dashboard in under 5 minutes, without a sales call or a support ticket.</p>\n<dl><dt>owner</dt><dd>Product</dd><dt>agreed</dt><dd>session 1</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c1\" data-kind=\"goal\">\n<h3>Cut time-to-first-value</h3>\n<p>New users reach a working dashboard in under 5 minutes, without a sales call or a support ticket.</p>\n<dl><dt>owner</dt><dd>Product</dd><dt>agreed</dt><dd>session 1</dd><dt>reviewed</dt><dd>session 2</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2495,
+          "endMs": 2703,
+          "status": 0,
+          "body": "<section data-card=\"c1\" data-kind=\"goal\">\n<h3>Cut time-to-first-value</h3>\n<p>New users reach a working dashboard in under 5 minutes, without a sales call or a support ticket.</p>\n<dl><dt>owner</dt><dd>Product</dd><dt>agreed</dt><dd>session 1</dd><dt>reviewed</dt><dd>session 2</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c5",
+      "note": "Add a detail row 'decided in: session 2'.",
+      "sent": 1794369185876,
+      "claimedMs": 11,
+      "visibleMs": 3209,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c5\nkind: decision\nstatus: decided\ntitle: How do we collect setup data?\nbody[1]: \"We need the data source, team size and main use case before the first dashboard is useful.\"\noptions[3]{label,detail,votes,chosen}:\n  Long form up front,Everything on one page before the product loads,2,false\n  Progressive wizard,\"Three short steps, skippable, resumable later\",5,true\n  Import from CSV,Fastest for teams that already have a spreadsheet,1,false\nmeta[1]{key,value}:\n  decide by,end of session\n",
+        "html": "<section data-card=\"c5\" data-kind=\"decision\" data-status=\"decided\">\n<h3>How do we collect setup data?</h3>\n<p>We need the data source, team size and main use case before the first dashboard is useful.</p>\n<ol>\n<li data-votes=\"2\">Long form up front<small>Everything on one page before the product loads</small></li>\n<li data-votes=\"5\" data-chosen=\"\">Progressive wizard<small>Three short steps, skippable, resumable later</small></li>\n<li data-votes=\"1\">Import from CSV<small>Fastest for teams that already have a spreadsheet</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c5\" data-kind=\"decision\" data-status=\"decided\">\n<h3>How do we collect setup data?</h3>\n<p>We need the data source, team size and main use case before the first dashboard is useful.</p>\n<ol>\n<li data-votes=\"2\">Long form up front<small>Everything on one page before the product loads</small></li>\n<li data-votes=\"5\" data-chosen=\"\">Progressive wizard<small>Three short steps, skippable, resumable later</small></li>\n<li data-votes=\"1\">Import from CSV<small>Fastest for teams that already have a spreadsheet</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd><dt>decided in</dt><dd>session 2</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 3027,
+          "endMs": 3235,
+          "status": 0,
+          "body": "<section data-card=\"c5\" data-kind=\"decision\" data-status=\"decided\">\n<h3>How do we collect setup data?</h3>\n<p>We need the data source, team size and main use case before the first dashboard is useful.</p>\n<ol>\n<li data-votes=\"2\">Long form up front<small>Everything on one page before the product loads</small></li>\n<li data-votes=\"5\" data-chosen>Progressive wizard<small>Three short steps, skippable, resumable later</small></li>\n<li data-votes=\"1\">Import from CSV<small>Fastest for teams that already have a spreadsheet</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>end of session</dd><dt>decided in</dt><dd>session 2</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c3",
+      "note": "Change the caption to 'target 60% · baseline last 30 days'.",
+      "sent": 1794369191644,
+      "claimedMs": 13,
+      "visibleMs": 2548,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c3\nkind: metric\nprogress: 68\ntitle: Activation rate\nvalue: \"44\"\ndisplay: 44%\ncaption: target 60% · baseline last 90 days\nbody[1]: A dashboard with at least one live data source within 7 days of signup.\n",
+        "html": "<section data-card=\"c3\" data-kind=\"metric\" data-progress=\"68\">\n<h3>Activation rate</h3>\n<data value=\"44\">44%</data>\n<small>target 60% · baseline last 90 days</small>\n<p>A dashboard with at least one live data source within 7 days of signup.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c3\" data-kind=\"metric\" data-progress=\"68\">\n<h3>Activation rate</h3>\n<data value=\"44\">44%</data>\n<small>target 60% · baseline last 30 days</small>\n<p>A dashboard with at least one live data source within 7 days of signup.</p>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2364,
+          "endMs": 2570,
+          "status": 0,
+          "body": "<section data-card=\"c3\" data-kind=\"metric\" data-progress=\"68\">\n<h3>Activation rate</h3>\n<data value=\"44\">44%</data>\n<small>target 60% · baseline last 30 days</small>\n<p>A dashboard with at least one live data source within 7 days of signup.</p>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c9",
+      "note": "Drop the demo data mitigation, c6 covers it.",
+      "sent": 1794369196751,
+      "claimedMs": 13,
+      "visibleMs": 2938,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c9\nkind: risk\nseverity: high\ntitle: Data access is the real bottleneck\nbody[1]: Most of the 23 minutes is people waiting for credentials from their own IT team.\nbullets[3]: Offer demo data so they can explore while they wait,Send a ready-made request email they can forward to IT,Let admins pre-approve data access\nmeta[1]{key,value}:\n  raised by,Support\n",
+        "html": "<section data-card=\"c9\" data-kind=\"risk\" data-severity=\"high\">\n<h3>Data access is the real bottleneck</h3>\n<p>Most of the 23 minutes is people waiting for credentials from their own IT team.</p>\n<ul>\n<li>Offer demo data so they can explore while they wait</li>\n<li>Send a ready-made request email they can forward to IT</li>\n<li>Let admins pre-approve data access</li>\n</ul>\n<dl><dt>raised by</dt><dd>Support</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c9\" data-kind=\"risk\" data-severity=\"high\">\n<h3>Data access is the real bottleneck</h3>\n<p>Most of the 23 minutes is people waiting for credentials from their own IT team.</p>\n<ul>\n<li>Send a ready-made request email they can forward to IT</li>\n<li>Let admins pre-approve data access</li>\n</ul>\n<dl><dt>raised by</dt><dd>Support</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2764,
+          "endMs": 2962,
+          "status": 0,
+          "body": "<section data-card=\"c9\" data-kind=\"risk\" data-severity=\"high\">\n<h3>Data access is the real bottleneck</h3>\n<p>Most of the 23 minutes is people waiting for credentials from their own IT team.</p>\n<ul>\n<li>Send a ready-made request email they can forward to IT</li>\n<li>Let admins pre-approve data access</li>\n</ul>\n<dl><dt>raised by</dt><dd>Support</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c6",
+      "note": "Decided: the sample dashboard.",
+      "sent": 1794369203062,
+      "claimedMs": 11,
+      "visibleMs": 2991,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c6\nkind: decision\nstatus: open\ntitle: What does an empty account show?\nbody[1]: \"Today a new account opens on a blank canvas, and a lot of people bounce right there.\"\noptions[3]{label,detail,votes,chosen}:\n  Sample dashboard with demo data,\"Clearly labeled, one click to swap in real data\",4,false\n  Template gallery,Pick a starting point by role,4,false\n  Keep the blank canvas,Add a short checklist in the sidebar,0,false\nmeta[1]{key,value}:\n  decide by,session 3\n",
+        "html": "<section data-card=\"c6\" data-kind=\"decision\" data-status=\"open\">\n<h3>What does an empty account show?</h3>\n<p>Today a new account opens on a blank canvas, and a lot of people bounce right there.</p>\n<ol>\n<li data-votes=\"4\">Sample dashboard with demo data<small>Clearly labeled, one click to swap in real data</small></li>\n<li data-votes=\"4\">Template gallery<small>Pick a starting point by role</small></li>\n<li data-votes=\"0\">Keep the blank canvas<small>Add a short checklist in the sidebar</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>session 3</dd></dl>\n</section>"
+      },
+      "after": "<section data-card=\"c6\" data-kind=\"decision\" data-status=\"decided\">\n<h3>What does an empty account show?</h3>\n<p>Today a new account opens on a blank canvas, and a lot of people bounce right there.</p>\n<ol>\n<li data-votes=\"4\" data-chosen=\"\">Sample dashboard with demo data<small>Clearly labeled, one click to swap in real data</small></li>\n<li data-votes=\"4\">Template gallery<small>Pick a starting point by role</small></li>\n<li data-votes=\"0\">Keep the blank canvas<small>Add a short checklist in the sidebar</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>session 3</dd></dl>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2807,
+          "endMs": 3010,
+          "status": 0,
+          "body": "<section data-card=\"c6\" data-kind=\"decision\" data-status=\"decided\">\n<h3>What does an empty account show?</h3>\n<p>Today a new account opens on a blank canvas, and a lot of people bounce right there.</p>\n<ol>\n<li data-votes=\"4\" data-chosen>Sample dashboard with demo data<small>Clearly labeled, one click to swap in real data</small></li>\n<li data-votes=\"4\">Template gallery<small>Pick a starting point by role</small></li>\n<li data-votes=\"0\">Keep the blank canvas<small>Add a short checklist in the sidebar</small></li>\n</ol>\n<dl><dt>decide by</dt><dd>session 3</dd></dl>\n</section>\n"
+        }
+      ]
+    },
+    {
+      "card": "c11",
+      "note": "Add a bullet: 'Offer a skip link for solo users'.",
+      "sent": 1794369208716,
+      "claimedMs": 13,
+      "visibleMs": 2681,
+      "correct": true,
+      "cardIn": {
+        "toon": "id: c11\nkind: idea\ntitle: Invite a teammate during setup\nbody[1]: Teams with two or more active people in week one retain much better.\n",
+        "html": "<section data-card=\"c11\" data-kind=\"idea\">\n<h3>Invite a teammate during setup</h3>\n<p>Teams with two or more active people in week one retain much better.</p>\n</section>"
+      },
+      "after": "<section data-card=\"c11\" data-kind=\"idea\">\n<h3>Invite a teammate during setup</h3>\n<p>Teams with two or more active people in week one retain much better.</p>\n<ul>\n<li>Offer a skip link for solo users</li>\n</ul>\n</section>",
+      "attempts": [
+        {
+          "startMs": 2502,
+          "endMs": 2701,
+          "status": 0,
+          "body": "<section data-card=\"c11\" data-kind=\"idea\">\n<h3>Invite a teammate during setup</h3>\n<p>Teams with two or more active people in week one retain much better.</p>\n<ul>\n<li>Offer a skip link for solo users</li>\n</ul>\n</section>\n"
+        }
+      ]
+    }
+  ],
+  "strayAttempts": []
+}

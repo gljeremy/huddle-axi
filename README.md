@@ -1,8 +1,10 @@
 # huddle-axi
 
-Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end and is
-tested with a scripted agent. Timing with a real model is not measured yet. Step 0's
-measurements are in [bench/RESULTS.md](bench/RESULTS.md).
+Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end. With
+Claude Haiku 5.5 as the agent, a note takes a median of 3–4 s to become a changed card on
+screen. The results, including a TOON vs HTML comparison, are in
+[bench/REAL-MODEL.md](bench/REAL-MODEL.md). Step 0's measurements of stock Lavish are in
+[bench/RESULTS.md](bench/RESULTS.md).
 
 A board for running a discussion on a shared screen. The facilitator leaves notes on
 cards; an agent picks each note up, rewrites that one card, and the card changes in place
@@ -85,7 +87,7 @@ meta[1]{key,value}:
 The field reference and HTML mapping live in [src/card-model.mjs](src/card-model.mjs).
 An `html` card uses the `html` field for its content, alongside its card attributes.
 A card whose markup doesn't fit the model is printed as its `<section>` HTML instead
-(`format: html`).
+(`format: html`). `--format html` prints every card that way.
 
 ```bash
 node src/cli.mjs patch my-board.html --card-file card.toon --note "marked decided"
