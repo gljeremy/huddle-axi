@@ -7,7 +7,11 @@
   const RULES = /*HUDDLE_RULES*/ null;
   const VERSION = /*HUDDLE_VERSION*/ '0.0.0';
   const FRESH_MS = 2500;
+  const BUSY_MS = 120_000;
+  const AUTOSAVE_MS = 300;
   const MAX_REVISIONS = 200;
+  // Served by `huddle-axi open`: notes go to the agent, patches arrive over SSE, saves go through the server.
+  const live = location.protocol === 'http:' && /^\/b\/[a-f0-9]{32}\/$/.test(location.pathname);
 
   class HuddleError extends Error {
     constructor(message) {
@@ -45,7 +49,10 @@
   let saving = null;
   let problems = [];
   let fileHandle = null;
+  let autosaveTimer;
+  let connection = live ? 'connecting' : null;
   const freshTimers = new WeakMap();
+  const busyTimers = new WeakMap();
 
   const cardEl = (id) => board.querySelector(`[data-card="${CSS.escape(id)}"]`);
   const allCards = () => [...board.querySelectorAll('[data-card]')];
@@ -154,6 +161,13 @@
     freshTimers.set(el, setTimeout(() => el.classList.remove('huddle-fresh'), FRESH_MS));
   }
 
+  // The agent picked up a note on this card. A patch replaces the card's attributes, which ends it.
+  function busy(el) {
+    clearTimeout(busyTimers.get(el));
+    el.classList.add('huddle-busy');
+    busyTimers.set(el, setTimeout(() => el.classList.remove('huddle-busy'), BUSY_MS));
+  }
+
   // Strips chrome and transient state, leaving the card exactly as it is stored.
   function clean(root) {
     root.querySelectorAll('[data-huddle-chrome]').forEach((n) => n.remove());
@@ -165,6 +179,68 @@
     return root;
   }
 
+  // The card as plain data (the shape in src/card-model.mjs), or null when its markup
+  // does not fit that shape and has to travel as HTML instead.
+  function toModel(el) {
+    const c = clean(el.cloneNode(true));
+    const { card: id, kind, status, severity, progress } = c.dataset;
+    const m = { id, kind };
+    if (status) m.status = status;
+    if (severity) m.severity = severity;
+    if (progress != null) m.progress = Number(progress);
+    if (kind === 'html') return { ...m, html: c.innerHTML.trim() };
+    const kids = [...c.children];
+    let i = 0;
+    const inner = (n) => n.innerHTML.trim();
+    const bare = (n) => n.attributes.length === 0;
+    const only = (n, names) => n.getAttributeNames().every((a) => names.includes(a));
+    const blankText = (n) => n.nodeType !== Node.TEXT_NODE || !n.textContent.trim();
+    const children = (n, tags) => [...n.childNodes].every((k) => (k.nodeType === Node.ELEMENT_NODE ? tags.includes(k.localName) && bare(k) : blankText(k)));
+    const take = (tag, ok = bare) => (kids[i]?.localName === tag && ok(kids[i]) ? kids[i++] : null);
+
+    const h3 = take('h3');
+    if (!h3) return null;
+    m.title = inner(h3);
+    const data = take('data', (n) => only(n, ['value']));
+    if (data) {
+      if (data.hasAttribute('value')) m.value = data.getAttribute('value');
+      m.display = inner(data);
+    }
+    const small = take('small');
+    if (small) m.caption = inner(small);
+    for (let p; (p = take('p')); ) (m.body ||= []).push(inner(p));
+    const ul = take('ul', (n) => bare(n) && children(n, ['li']));
+    if (ul) m.bullets = [...ul.children].map(inner);
+    const lis = (n) => [...n.childNodes].every((k) => (k.nodeType === Node.ELEMENT_NODE ? k.localName === 'li' && only(k, ['data-votes', 'data-chosen']) : blankText(k)));
+    const ol = take('ol', (n) => bare(n) && lis(n));
+    if (ol) {
+      m.options = [...ol.children].map((li) => {
+        const copy = li.cloneNode(true);
+        const last = copy.lastElementChild;
+        let detail = '';
+        if (last?.localName === 'small' && bare(last) && !last.nextSibling?.textContent.trim()) {
+          detail = inner(last);
+          last.remove();
+        }
+        return { label: inner(copy), detail, votes: li.hasAttribute('data-votes') ? Number(li.dataset.votes) : null, chosen: li.hasAttribute('data-chosen') };
+      });
+    }
+    const dl = take('dl', (n) => bare(n) && children(n, ['dt', 'dd']) && [...n.children].every((k, j) => k.localName === (j % 2 ? 'dd' : 'dt')) && n.children.length % 2 === 0);
+    if (dl) {
+      const pairs = [...dl.children];
+      m.meta = [];
+      for (let j = 0; j < pairs.length; j += 2) m.meta.push({ key: inner(pairs[j]), value: inner(pairs[j + 1]) });
+    }
+    return i === kids.length ? m : null;
+  }
+
+  async function post(path, body) {
+    const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
+    return out;
+  }
+
   const toolbar = chrome('div', 'huddle-toolbar');
   const toolbarState = chrome('span', 'huddle-state');
   const saveButton = chrome('button', 'huddle-save', 'Save');
@@ -172,13 +248,18 @@
 
   function renderToolbar(note) {
     toolbar.toggleAttribute('data-dirty', dirty);
-    toolbarState.textContent = `${allCards().length} cards · ${note || (dirty ? 'unsaved changes' : 'no unsaved changes')}`;
+    const parts = [connection && `live (${connection})`, `${allCards().length} cards`, note || (dirty ? 'unsaved changes' : 'no unsaved changes')];
+    toolbarState.textContent = parts.filter(Boolean).join(' · ');
   }
 
   function markDirty() {
     generation++;
     dirty = true;
     renderToolbar();
+    if (live) {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => save().catch((err) => renderToolbar(`save failed: ${err.message}`)), AUTOSAVE_MS);
+    }
   }
 
   function record(card, op, by, note) {
@@ -208,9 +289,15 @@
     if (!el) throw new HuddleError(`there is no card #${id}`);
     const body = String(text).trim();
     if (!body) throw new HuddleError('a note cannot be empty');
-    (context.threads[id] ||= []).push({ who, text: body, at: new Date().toISOString() });
+    const thread = (context.threads[id] ||= []);
+    const earlier = thread.map((n) => ({ who: n.who, text: n.text }));
+    thread.push({ who, text: body, at: new Date().toISOString() });
     decorate(el);
     markDirty();
+    if (live) {
+      post('./note', { card: id, text: body, model: toModel(el), html: get(id), thread: earlier, title: context.title ?? '', brief: context.brief ?? '' })
+        .then(() => renderToolbar('note sent to the agent'), (err) => renderToolbar(`note not sent: ${err.message}`));
+    }
   }
 
   function get(id) {
@@ -240,6 +327,7 @@
   }
 
   function save() {
+    clearTimeout(autosaveTimer);
     const pending = saving ? saving.then(writeSave, writeSave) : writeSave();
     saving = pending;
     const finished = () => { if (saving === pending) saving = null; };
@@ -251,7 +339,10 @@
     const savedGeneration = generation;
     const text = serialize();
     let result;
-    if (typeof window.showSaveFilePicker === 'function') {
+    if (live) {
+      await post('./save', { html: text });
+      result = 'saved';
+    } else if (typeof window.showSaveFilePicker === 'function') {
       try {
         fileHandle ||= await window.showSaveFilePicker({
           suggestedName: fileName(),
@@ -323,11 +414,59 @@
   document.body.append(toolbar);
   renderToolbar();
 
+  if (live) {
+    const events = new EventSource('./events');
+    events.onopen = () => {
+      connection = 'connected';
+      renderToolbar();
+    };
+    events.onerror = () => {
+      connection = 'reconnecting';
+      renderToolbar();
+    };
+    events.addEventListener('claimed', (e) => {
+      const el = cardEl(JSON.parse(e.data).card);
+      if (el) busy(el);
+    });
+    events.addEventListener('snapshot', (e) => {
+      const { reqId, card, threadLength } = JSON.parse(e.data);
+      const el = cardEl(card);
+      const ack = el ? {
+        reqId, ok: true, model: toModel(el), html: get(card),
+        thread: (context.threads[card] ?? []).slice(0, threadLength).map(({ who, text }) => ({ who, text })),
+      } : { reqId, ok: false };
+      post('./ack', ack).catch((err) => console.error('huddle: could not answer the agent', err));
+    });
+    // Apply, write the file, then answer, so the agent's patch call returns only once the change is on disk.
+    events.addEventListener('patch', async (e) => {
+      const { reqId, html, note } = JSON.parse(e.data);
+      let ack;
+      try {
+        const card = patch(html, { by: 'agent', note });
+        try {
+          await save();
+        } catch (err) {
+          renderToolbar(`save failed: ${err.message}`);
+          throw new Error(`the card changed on screen but saving failed: ${err.message}`);
+        }
+        ack = { reqId, ok: true, card };
+      } catch (err) {
+        ack = { reqId, ok: false, error: err.message };
+      }
+      post('./ack', ack).catch((err) => console.error('huddle: could not answer the agent', err));
+    });
+  }
+
   window.huddle = Object.freeze({
     version: VERSION,
     HuddleError,
     cards,
+    live,
     get,
+    model: (id) => {
+      const el = cardEl(id);
+      return el ? toModel(el) : null;
+    },
     patch,
     comment,
     serialize,

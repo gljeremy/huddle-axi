@@ -79,6 +79,11 @@ body { margin: 0; font: 19px/1.45 var(--sans); background: var(--bg); }
 
 /* The "this changed" glow has to survive a compressed screen share, so it is loud. */
 [data-card].huddle-fresh { box-shadow: 0 0 0 5px var(--glow); background: color-mix(in srgb, var(--glow) 20%, var(--paper)); }
+/* The agent picked up a note on this card and is rewriting it. */
+[data-card].huddle-busy { outline: 3px dashed var(--glow); outline-offset: 3px; animation: huddle-pulse 1.4s ease-in-out infinite; }
+[data-card].huddle-busy::after { content: 'agent is on it…'; position: absolute; right: 12px; bottom: -11px;
+  font: 600 0.62em/1 var(--sans); color: var(--ink); background: var(--glow); border-radius: 99px; padding: 4px 9px; }
+@keyframes huddle-pulse { 50% { outline-color: transparent; } }
 
 .huddle-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: flex; gap: 10px; align-items: center;
   font-size: 0.7em; color: var(--paper); background: var(--ink); border-radius: 10px; padding: 7px 8px 7px 14px;
@@ -86,5 +91,5 @@ body { margin: 0; font: 19px/1.45 var(--sans); background: var(--bg); }
 .huddle-toolbar[data-dirty] .huddle-state::before { content: '● '; color: var(--glow); }
 .huddle-toolbar button { font: 600 1em var(--sans); color: var(--ink); background: var(--glow); border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
 
-@media (prefers-reduced-motion: reduce) { [data-card] { transition: none; } }
+@media (prefers-reduced-motion: reduce) { [data-card] { transition: none; } [data-card].huddle-busy { animation: none; } }
 @media print { .huddle-toolbar, .huddle-note-btn, .huddle-note { display: none; } }
