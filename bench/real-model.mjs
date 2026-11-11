@@ -47,11 +47,12 @@ async function untilPolling(ms) {
 }
 
 if (cli('new', board, '--sample').status !== 0) throw new Error('could not make the board');
-const opened = cli('open', board, '--no-open');
-if (opened.status !== 0) throw new Error(opened.stderr);
-const browser = await launchBrowser();
+let browser;
 const rounds = [];
 try {
+  const opened = cli('open', board, '--no-open');
+  if (opened.status !== 0) throw new Error(opened.stderr);
+  browser = await launchBrowser();
   await browser.open(decode(opened.stdout).url);
   await browser.call(() => new Promise((ok) => {
     const check = () => (document.querySelector('.huddle-state')?.textContent.includes('live (connected)') ? ok() : setTimeout(check, 20));
@@ -103,8 +104,11 @@ try {
     if (timing.visible === null) break;
   }
 } finally {
-  await browser.close();
-  cli('stop');
+  try {
+    await browser?.close();
+  } finally {
+    cli('stop');
+  }
 }
 
 const logFile = `${board}.patches.jsonl`;
