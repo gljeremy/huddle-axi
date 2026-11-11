@@ -5,6 +5,43 @@ import { chmodSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, wri
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { startServer } from '../src/server.mjs';
+import { Readable } from 'node:stream';
+
+test('oversized live saves return a readable refusal without replacing the board', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'huddle-save-limit-'));
+  const file = join(dir, 'board.html');
+  const original = '<!doctype html><title>Keep this board</title>';
+  writeFileSync(file, original);
+  const { server, token, stop } = startServer();
+  try {
+    await once(server, 'listening');
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const opened = await fetch(`${base}/api/open`, {
+      method: 'POST', headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ file }),
+    });
+    const { url } = await opened.json();
+    const chunk = Buffer.alloc(1024 * 1024, 'x');
+    const body = Readable.from((async function* () {
+      yield '{"html":"<!doctype html>';
+      for (let i = 0; i < 129; i++) yield chunk;
+      yield '"}';
+    })());
+    const refused = await fetch(`${url}save`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body, duplex: 'half',
+      signal: AbortSignal.timeout(30_000),
+    });
+    assert.equal(refused.status, 413);
+    assert.equal((await refused.json()).error, 'request is too large');
+    assert.equal(readFileSync(file, 'utf8'), original);
+    const retry = await fetch(`${url}save`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ html: original }),
+    });
+    assert.equal(retry.status, 200, 'a refusal does not break subsequent saves');
+  } finally {
+    stop();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test('cancelled polls preserve notes without claiming them', async (t) => {
   for (const completion of ['ack', 'timeout']) {

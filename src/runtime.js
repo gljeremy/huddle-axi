@@ -271,7 +271,7 @@
   async function post(path, body) {
     const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const out = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(out.error || `HTTP ${res.status}`);
+    if (!res.ok) throw new Error(path === './save' && res.status === 413 ? 'the board is too large to save' : out.error || `HTTP ${res.status}`);
     return out;
   }
 

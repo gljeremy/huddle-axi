@@ -4,7 +4,9 @@
 import { after, before, beforeEach, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { once } from 'node:events';
+import { startServer } from '../src/server.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -245,6 +247,77 @@ test('meeting notes export as Markdown', async () => {
     '- **Activation rate**: 41% (68% progress) — target 60% · baseline last 90 days A dashboard with at least one live data source within 7 days of signup.',
     '- **Timeline** — see the board for this card',
   ]) assert.ok(lines.includes(line), `missing line: ${line}\n${md}`);
+});
+
+test('meeting notes retain fields in valid non-model card layouts', async () => {
+  await call(() => {
+    huddle.patch('<section data-card="c14" data-kind="action"><h3>Book room</h3><dl><dt>owner</dt><dd>Alex</dd></dl><p>Before Friday</p></section>');
+    huddle.patch('<section data-card="c3" data-kind="metric"><h3>Attendance</h3><p>Confirmed people</p><data value="12">12 people</data><small>Target 15</small></section>');
+    huddle.patch('<section data-card="c5" data-kind="decision" data-status="decided"><h3>Venue</h3><dl><dt>decide by</dt><dd>Thursday</dd></dl><ol><li data-chosen data-votes="2">Office<small>No rental cost</small></li><li data-votes="1">Hotel</li></ol><ul><li>Send directions</li></ul><p>Choose today</p></section>');
+    huddle.comment('c5', 'Tell everyone.');
+  });
+  assert.deepEqual(await call(() => ['c14', 'c3', 'c5'].map((id) => huddle.model(id))), [null, null, null]);
+  const lines = (await call(() => huddle.exportNotes())).split('\n');
+  for (const line of [
+    '- **Book room** — Before Friday',
+    '  - owner: Alex',
+    '- **Attendance**: 12 people — Confirmed people Target 15',
+    '- **Venue** (decided) — Choose today',
+    '  - [x] Office — No rental cost (2 votes)',
+    '  - [ ] Hotel (1 vote)',
+    '  - Send directions',
+    '  - decide by: Thursday',
+    '  - Note from facilitator: Tell everyone.',
+  ]) assert.ok(lines.includes(line), `missing exported content: ${line}`);
+});
+
+test('live saves preserve image-heavy undo history and explain size refusals', async () => {
+  const file = join(dir, 'live-history.html');
+  execFileSync(process.execPath, [CLI, 'new', file, '--sample']);
+  const { server, token, stop } = startServer();
+  try {
+    await once(server, 'listening');
+    const opened = await fetch(`http://127.0.0.1:${server.address().port}/api/open`, {
+      method: 'POST', headers: { authorization: `Bearer ${token}` }, body: JSON.stringify({ file }),
+    });
+    const { url } = await opened.json();
+    await browser.open(url);
+    await call(async () => {
+      const image = `data:image/png;base64,${'A'.repeat(3 * 1024 * 1024)}`;
+      for (let i = 0; i <= 6; i++) {
+        huddle.patch(`<section data-card="c16" data-kind="html"><h3>Image ${i}</h3><img src="${image}"></section>`);
+      }
+      await huddle.save();
+    });
+    const saved = readFileSync(file, 'utf8');
+    assert.ok(Buffer.byteLength(saved) > 20 * 1024 * 1024, 'six image versions exceed the old transport limit');
+    const context = JSON.parse(saved.match(/<script[^>]*data-huddle-context[^>]*>([\s\S]*?)<\/script>/)[1]);
+    assert.equal(context.history.c16.length, 7, 'all earlier versions travel with the file');
+    await browser.open(pathToFileURL(file).href);
+    await call(() => huddle.undo('c16'));
+    assert.equal(await call(() => new DOMParser().parseFromString(huddle.get('c16'), 'text/html').querySelector('h3').textContent), 'Image 5');
+
+    await browser.open(url);
+    await call(async () => {
+      while (!document.querySelector('.huddle-state').textContent.includes('live (connected)')) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      const realFetch = window.fetch;
+      window.fetch = (url, options) => url === './save'
+        ? Promise.resolve(new Response(JSON.stringify({ error: 'request is too large' }), { status: 413 }))
+        : realFetch(url, options);
+      huddle.patch('<section data-card="c1" data-kind="goal"><h3>Keep unsaved work</h3></section>');
+      document.querySelector('.huddle-save').click();
+      while (!document.querySelector('.huddle-state').textContent.includes('save failed:')) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    });
+    assert.match(await call(() => document.querySelector('.huddle-state').textContent), /save failed: the board is too large to save/);
+    assert.equal(await call(() => huddle.dirty), true);
+    assert.equal(readFileSync(file, 'utf8'), saved, 'a refusal must not replace the saved board');
+  } finally {
+    stop();
+  }
 });
 
 test('a read-only snapshot shows the board with no runtime or controls', async () => {

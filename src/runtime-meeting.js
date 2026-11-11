@@ -292,22 +292,32 @@
 
   function cardNotes(el) {
     const id = el.dataset.card;
-    const m = toModel(el);
-    const title = (m?.title ? plain(m.title) : el.querySelector(':scope > h3')?.textContent.replace(/\s+/g, ' ').trim()) || `#${id}`;
+    const c = clean(el.cloneNode(true));
+    const fields = (selector) => [...c.querySelectorAll(selector)];
+    const title = plain(c.querySelector(':scope > h3')?.innerHTML) || `#${id}`;
     const tags = [el.dataset.status, el.dataset.severity && `${el.dataset.severity} severity`, el.dataset.progress != null && `${el.dataset.progress}% progress`].filter(Boolean);
     let head = `- **${title}**`;
-    if (m?.display) head += `: ${plain(m.display)}`;
+    const display = fields(':scope > data').map((n) => plain(n.innerHTML)).filter(Boolean).join(' ');
+    if (display) head += `: ${display}`;
     if (tags.length) head += ` (${tags.join(', ')})`;
-    const text = m ? [m.caption, ...(m.body ?? [])].map(plain).filter(Boolean).join(' ') : [...el.querySelectorAll(':scope > p')].map((p) => plain(p.innerHTML)).join(' ');
+    const text = fields(':scope > small, :scope > p').map((n) => plain(n.innerHTML)).filter(Boolean).join(' ');
     if (text) head += ` — ${text}`;
     if (el.dataset.kind === 'html') head += ' — see the board for this card';
     const lines = [head];
-    for (const o of m?.options ?? []) {
-      const votes = o.votes == null ? '' : ` (${o.votes} ${o.votes === 1 ? 'vote' : 'votes'})`;
-      lines.push(`  - [${o.chosen ? 'x' : ' '}] ${plain(o.label)}${o.detail ? ` — ${plain(o.detail)}` : ''}${votes}`);
+    for (const li of fields(':scope > ol > li')) {
+      const copy = li.cloneNode(true);
+      const detail = copy.querySelector(':scope > small:last-child');
+      detail?.remove();
+      const count = li.hasAttribute('data-votes') ? Number(li.dataset.votes) : null;
+      const votes = count == null ? '' : ` (${count} ${count === 1 ? 'vote' : 'votes'})`;
+      lines.push(`  - [${li.hasAttribute('data-chosen') ? 'x' : ' '}] ${plain(copy.innerHTML)}${detail ? ` — ${plain(detail.innerHTML)}` : ''}${votes}`);
     }
-    for (const b of m?.bullets ?? []) lines.push(`  - ${plain(b)}`);
-    if (m?.meta?.length) lines.push(`  - ${m.meta.map(({ key, value }) => `${plain(key)}: ${plain(value)}`).join(' · ')}`);
+    for (const b of fields(':scope > ul > li')) lines.push(`  - ${plain(b.innerHTML)}`);
+    const meta = fields(':scope > dl > dt').map((dt) => {
+      const dd = dt.nextElementSibling;
+      return `${plain(dt.innerHTML)}: ${dd?.localName === 'dd' ? plain(dd.innerHTML) : ''}`;
+    });
+    if (meta.length) lines.push(`  - ${meta.join(' · ')}`);
     for (const n of context.threads[id] ?? []) lines.push(`  - Note from ${n.who}: ${n.text}`);
     return lines;
   }

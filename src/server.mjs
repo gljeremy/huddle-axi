@@ -18,6 +18,7 @@ export const stateDir = () => process.env.HUDDLE_STATE_DIR || join(tmpdir(), 'hu
 export const stateFile = () => join(stateDir(), 'server.json');
 
 const MAX_BODY = 20 * 1024 * 1024;
+const MAX_SAVE_BODY = 128 * 1024 * 1024;
 const ACK_MS = 10_000;
 const IDLE_MS = 4 * 60 * 60 * 1000;
 
@@ -28,18 +29,19 @@ class HttpError extends Error {
   }
 }
 
-function readBody(req) {
+function readBody(req, limit = MAX_BODY) {
   return new Promise((ok, fail) => {
     const chunks = [];
     let size = 0;
     req.on('data', (chunk) => {
       size += chunk.length;
-      if (size > MAX_BODY) {
+      if (size > limit) {
+        chunks.length = 0;
         fail(new HttpError(413, 'request is too large'));
-        req.destroy();
       } else chunks.push(chunk);
     });
     req.on('end', () => {
+      if (size > limit) return;
       try {
         ok(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
       } catch {
@@ -226,7 +228,7 @@ export function startServer({ token = randomBytes(16).toString('hex'), idleMs = 
     if (req.method !== 'POST') throw new HttpError(405, 'method not allowed');
     // A JSON content type makes cross-site form posts impossible without a CORS preflight, which we never grant.
     if (!String(req.headers['content-type']).startsWith('application/json')) throw new HttpError(415, 'send JSON');
-    const body = await readBody(req);
+    const body = await readBody(req, action === 'save' ? MAX_SAVE_BODY : MAX_BODY);
     switch (action) {
       case 'save': {
         if (typeof body.html !== 'string' || !/^<!doctype html>/i.test(body.html)) throw new HttpError(400, 'html must be a whole board');
