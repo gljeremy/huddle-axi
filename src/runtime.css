@@ -10,14 +10,15 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--bg); color: var(--ink); }
-body { margin: 0; font: 19px/1.45 var(--sans); background: var(--bg); }
+/* Present mode sets --huddle-type; em-based type and lane widths scale together. */
+body { margin: 0; font: var(--huddle-type, 19px)/1.45 var(--sans); background: var(--bg); }
 
 [data-huddle-board] { max-width: 1440px; margin: 0 auto; padding: 28px 24px 110px; }
 [data-huddle-header] { border-bottom: 3px solid var(--ink); padding-bottom: 14px; }
 [data-huddle-header] h1 { font-size: 2.1em; line-height: 1.1; margin: 0; letter-spacing: -0.02em; }
 [data-huddle-header] p { margin: 6px 0 0; color: var(--muted); }
 
-[data-lane] { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 14px; margin-top: 30px; align-items: start; }
+[data-lane] { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(16em, 100%), 1fr)); gap: 14px; margin-top: 30px; align-items: start; }
 [data-lane] > h2 { grid-column: 1 / -1; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.12em; color: var(--faint); margin: 0; }
 
 /* ---------- cards ---------- */
@@ -48,7 +49,7 @@ body { margin: 0; font: 19px/1.45 var(--sans); background: var(--bg); }
 
 /* decision options: <ol><li data-votes="5" data-chosen>Label<small>detail</small></li></ol> */
 [data-card] ol { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
-[data-card] ol > li { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; margin: 0;
+[data-card] ol > li { display: grid; grid-template-columns: auto 1fr auto; column-gap: 10px; margin: 0;
   border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
 [data-card] ol > li::before { content: attr(data-votes); grid-row: span 2; min-width: 1.4em; font: 600 0.85em/1.7 var(--mono); color: var(--k); }
 [data-card] ol > li small { grid-column: 2; }
@@ -77,19 +78,51 @@ body { margin: 0; font: 19px/1.45 var(--sans); background: var(--bg); }
 .huddle-note textarea { width: 100%; min-height: 3.4em; resize: vertical; font: inherit; font-size: 0.8em;
   color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
 
-/* The "this changed" glow has to survive a compressed screen share, so it is loud. */
-[data-card].huddle-fresh { box-shadow: 0 0 0 5px var(--glow); background: color-mix(in srgb, var(--glow) 20%, var(--paper)); }
+/* The "this changed" glow has to survive a compressed screen share, so it is loud: a thick ring on the
+   card, and a solid highlight on each part that is new or different. Both fade after a few seconds. */
+[data-card].huddle-fresh { box-shadow: 0 0 0 7px var(--glow); background: color-mix(in srgb, var(--glow) 18%, var(--paper)); }
+[data-card] :is(h3, data, small, p, li, dt, dd) { transition: background-color 1.2s, box-shadow 1.2s; }
+[data-card] .huddle-changed { background: color-mix(in srgb, var(--glow) 60%, var(--paper)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--glow) 60%, var(--paper)); border-radius: 3px; }
 /* The agent picked up a note on this card and is rewriting it. */
 [data-card].huddle-busy { outline: 3px dashed var(--glow); outline-offset: 3px; animation: huddle-pulse 1.4s ease-in-out infinite; }
 [data-card].huddle-busy::after { content: 'agent is on it…'; position: absolute; right: 12px; bottom: -11px;
   font: 600 0.62em/1 var(--sans); color: var(--ink); background: var(--glow); border-radius: 99px; padding: 4px 9px; }
 @keyframes huddle-pulse { 50% { outline-color: transparent; } }
 
-.huddle-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: flex; gap: 10px; align-items: center;
+/* Quick actions: plain-code edits, shown while the pointer is on the card. */
+/* Centred on the card's bottom edge, so it covers the card's padding but none of its text. */
+.huddle-quick { position: absolute; left: 10px; right: 10px; bottom: 0; transform: translateY(50%); z-index: 2; display: flex; flex-wrap: wrap; gap: 4px;
+  justify-content: flex-start; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+[data-card]:hover .huddle-quick, [data-card]:focus-within .huddle-quick { opacity: 1; pointer-events: auto; }
+.huddle-quick :is(button, select), .huddle-opt button { font: 600 0.62em var(--sans); color: var(--ink); background: var(--paper);
+  border: 1px solid var(--faint); border-radius: 6px; padding: 3px 8px; cursor: pointer; }
+.huddle-quick select { max-width: 9em; }
+.huddle-opt { grid-column: 3; grid-row: 1 / span 2; align-self: center; display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s; }
+.huddle-opt button { padding: 2px 7px; }
+[data-card]:hover .huddle-opt, [data-card]:focus-within .huddle-opt { opacity: 1; }
+.huddle-option-input { display: none; margin-top: 8px; }
+.huddle-adding .huddle-option-input { display: block; }
+.huddle-option-input input { width: 100%; font: inherit; font-size: 0.8em; color: var(--ink); background: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+
+.huddle-toolbar { position: fixed; right: 16px; bottom: 16px; z-index: 10; display: flex; gap: 8px; align-items: center;
   font-size: 0.7em; color: var(--paper); background: var(--ink); border-radius: 10px; padding: 7px 8px 7px 14px;
   box-shadow: 0 4px 18px rgb(0 0 0 / 0.2); }
 .huddle-toolbar[data-dirty] .huddle-state::before { content: '● '; color: var(--glow); }
-.huddle-toolbar button { font: 600 1em var(--sans); color: var(--ink); background: var(--glow); border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+.huddle-toolbar button { font: 600 1em var(--sans); color: var(--paper); background: transparent; border: 1px solid var(--faint);
+  border-radius: 7px; padding: 5px 11px; cursor: pointer; }
+.huddle-toolbar .huddle-save { color: var(--ink); background: var(--glow); border-color: var(--glow); }
+.huddle-toolbar:not([data-present]) .huddle-zoom { display: none; }
+.huddle-menu { position: absolute; right: 8px; bottom: calc(100% + 6px); display: grid; gap: 4px; padding: 6px;
+  background: var(--ink); border-radius: 10px; box-shadow: 0 4px 18px rgb(0 0 0 / 0.2); }
+.huddle-menu[hidden] { display: none; }
+.huddle-menu button { text-align: left; white-space: nowrap; }
 
-@media (prefers-reduced-motion: reduce) { [data-card] { transition: none; } [data-card].huddle-busy { animation: none; } }
-@media print { .huddle-toolbar, .huddle-note-btn, .huddle-note { display: none; } }
+/* Present mode: projector-size type (set by the runtime) and the full width of the screen. */
+body:has(> .huddle-toolbar[data-present]) [data-huddle-board] { max-width: none; }
+
+/* A read-only snapshot has no runtime, so it shows what the cards say and nothing to click. */
+[data-huddle-snapshot] { font-size: 0.75em; color: var(--faint); }
+
+@media (prefers-reduced-motion: reduce) { [data-card], [data-card] * { transition: none; } [data-card].huddle-busy { animation: none; } }
+@media print { .huddle-toolbar, .huddle-note-btn, .huddle-note, .huddle-quick, .huddle-opt, .huddle-option-input { display: none; } }

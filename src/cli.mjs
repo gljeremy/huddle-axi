@@ -37,9 +37,16 @@ const USAGE = `usage:
 const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 export function buildBoard({ title, subtitle = '', brief = '', lanes }) {
-  const runtimeJs = readFileSync(here('./runtime.js'), 'utf8')
-    .replace('/*HUDDLE_RULES*/ null', () => JSON.stringify(RULES))
-    .replace("/*HUDDLE_VERSION*/ '0.0.0'", () => JSON.stringify(VERSION));
+  const parts = {
+    '  /*HUDDLE_MEETING*/\n': readFileSync(here('./runtime-meeting.js'), 'utf8'),
+    '/*HUDDLE_RULES*/ null': JSON.stringify(RULES),
+    "/*HUDDLE_VERSION*/ '0.0.0'": JSON.stringify(VERSION),
+  };
+  let runtimeJs = readFileSync(here('./runtime.js'), 'utf8');
+  for (const [mark, value] of Object.entries(parts)) {
+    if (!runtimeJs.includes(mark)) throw new Error(`runtime.js is missing its ${mark.trim()} placeholder`);
+    runtimeJs = runtimeJs.replace(mark, () => value);
+  }
   const context = {
     format: 'huddle-board',
     formatVersion: 1,
