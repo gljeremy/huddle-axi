@@ -76,7 +76,7 @@ async function writeAtomic(file, text) {
   }
 }
 
-// Turns what the agent sent into one card's HTML. TOON is the default; markup is accepted as-is.
+// Markup passes through here; the browser validates it before applying the patch.
 export function patchBodyToHtml(body) {
   const text = String(body ?? '').trim();
   if (!text) throw new HttpError(400, 'the patch is empty');
@@ -155,7 +155,10 @@ export function startServer({ token = randomBytes(16).toString('hex'), idleMs = 
 
   async function api(req, res, url) {
     if (req.headers.authorization !== `Bearer ${token}`) throw new HttpError(401, 'bad or missing token');
-    if (url.pathname === '/api/health') return send(res, 200, { ok: true, pid: process.pid, sessions: sessions.size });
+    if (url.pathname === '/api/health') {
+      const waiting = [...sessions.values()].reduce((n, s) => n + s.pollers.filter((p) => !p.res.destroyed).length, 0);
+      return send(res, 200, { ok: true, pid: process.pid, sessions: sessions.size, waiting });
+    }
     if (req.method !== 'POST') throw new HttpError(405, 'use POST');
     const body = await readBody(req);
     const file = typeof body.file === 'string' ? resolve(body.file) : null;

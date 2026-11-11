@@ -1,8 +1,9 @@
 # huddle-axi
 
-Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end and is
-tested with a scripted agent. Timing with a real model is not measured yet. Step 0's
-measurements are in [bench/RESULTS.md](bench/RESULTS.md).
+Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end.
+See [bench/REAL-MODEL.md](bench/REAL-MODEL.md) for the real-model measurements,
+TOON vs HTML comparison and limitations, and [bench/RESULTS.md](bench/RESULTS.md)
+for step 0's measurements of stock Lavish.
 
 A board for running a discussion on a shared screen. The facilitator leaves notes on
 cards; an agent picks each note up, rewrites that one card, and the card changes in place
@@ -16,8 +17,7 @@ goes its own way:
 - **Rigid cards.** Restricted HTML with fixed tags, plus an `html` escape hatch for
   diagrams and one-offs. See the card rules below for the authoritative restrictions.
 - **Card-level patches.** One card changes at a time, swapped in place with a glow that
-  survives a screen share. The agent reads and writes cards as TOON, and the CLI turns
-  that into the restricted HTML in the file.
+  survives a screen share. See the live-session instructions below for card formats.
 - **One writer.** Only the facilitator edits. The room watches the shared screen.
 
 The reviewed plan is in `lavish-fast-plan.html`.
@@ -58,7 +58,7 @@ While served, the board is live:
 The agent runs a loop:
 
 ```bash
-node src/cli.mjs poll my-board.html --out card.toon
+node src/cli.mjs poll my-board.html --out card.html
 ```
 
 `poll` waits for the next note (8 minutes by default, `--timeout-ms` to change) and prints
@@ -66,7 +66,11 @@ the note, the earlier notes on that card, the board's title and brief, and the c
 itself. At delivery it asks the browser for the current card, so queued notes include
 previous rewrites; if the browser does not answer within a second, it uses the snapshot
 captured when the note was submitted. With `--out`, the card goes to that file, ready
-for a targeted edit. A card looks like this:
+for a targeted edit.
+
+The card comes as its `<section>` HTML, following the card rules below. This default
+follows the [step 2 format comparison](bench/REAL-MODEL.md#verdict).
+`poll --format toon` opts into TOON instead. A card in TOON looks like this:
 
 ```
 id: c5
@@ -84,14 +88,14 @@ meta[1]{key,value}:
 
 The field reference and HTML mapping live in [src/card-model.mjs](src/card-model.mjs).
 An `html` card uses the `html` field for its content, alongside its card attributes.
-A card whose markup doesn't fit the model is printed as its `<section>` HTML instead
-(`format: html`).
+With `--format toon`, a card whose markup doesn't fit the model is still printed as its
+`<section>` HTML (`format: html`). The header's `format` always says which you got.
 
 ```bash
-node src/cli.mjs patch my-board.html --card-file card.toon --note "marked decided"
+node src/cli.mjs patch my-board.html --card-file card.html --note "marked decided"
 ```
 
-`patch` takes the edited card as TOON or as one `<section>`, from `--card-file` or
+`patch` takes the edited card as one `<section>` or as TOON, from `--card-file` or
 stdin. It returns once the card has changed on screen and the file is saved. A bad card
 is refused with the reason (a TOON line number, or the card rule it breaks), and the
 board is left as it was. If saving fails after applying a valid card, `patch` exits

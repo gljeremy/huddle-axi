@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // huddle-axi CLI: make a board, open it live, and run the agent's poll/patch loop.
-// Output is TOON (https://toonformat.dev) so an agent can read it directly.
+// Response metadata is TOON (https://toonformat.dev); see README.md for card formats.
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -17,7 +17,7 @@ const POLL_MS = 8 * 60 * 1000;
 const USAGE = `usage:
   huddle-axi new <file.html> [--title "<title>"] [--sample] [--force]
   huddle-axi open <file.html> [--no-open]
-  huddle-axi poll <file.html> [--timeout-ms <ms>] [--out <card-file>]
+  huddle-axi poll <file.html> [--timeout-ms <ms>] [--out <card-file>] [--format html|toon]
   huddle-axi patch <file.html> [--card-file <card-file>] [--note "<what changed>"]
   huddle-axi stop
 
@@ -29,7 +29,8 @@ const USAGE = `usage:
   poll    wait for the facilitator's next note; prints the note and the card it is on
           --timeout-ms  how long to wait (default ${POLL_MS})
           --out         write the card to this file instead of printing it
-  patch   replace one card: TOON (as poll prints it) or one <section> element,
+          --format      html (default) or toon (falls back to html for cards TOON can't hold)
+  patch   replace one card, sent the way poll printed it: one <section> element or TOON,
           from --card-file or stdin. The board updates in place and the file is saved.
   stop    stop the background server`;
 
@@ -63,7 +64,7 @@ export function buildBoard({ title, subtitle = '', brief = '', lanes }) {
   return readFileSync(here('./board-template.html'), 'utf8').replace(/\{\{([A-Z]+)\}\}/g, (_, key) => fill[key]);
 }
 
-const VALUE_FLAGS = new Set(['--title', '--timeout-ms', '--out', '--card-file', '--note']);
+const VALUE_FLAGS = new Set(['--title', '--timeout-ms', '--out', '--card-file', '--note', '--format']);
 const BOOL_FLAGS = new Set(['--sample', '--force', '--no-open']);
 const COMMANDS = { new: 1, open: 1, poll: 1, patch: 1, stop: 0 }; // positional args after the command
 
@@ -121,9 +122,9 @@ async function liveServer() {
   return state;
 }
 
-// The card as the agent should edit it: TOON when it fits the card model, else its HTML.
-function cardText(note) {
-  if (note.model) {
+// The card as the agent should edit it: its HTML, or TOON when asked for and the card fits the model.
+function cardText(note, format) {
+  if (note.model && format === 'toon') {
     try {
       return { format: 'toon', text: cardToToon(note.model) };
     } catch {}
@@ -134,13 +135,15 @@ function cardText(note) {
 async function cmdPoll(path, flags) {
   const timeoutMs = flags.timeoutMs === undefined ? POLL_MS : Number(flags.timeoutMs);
   if (!Number.isInteger(timeoutMs) || timeoutMs < 0) throw new UsageError('--timeout-ms must be a whole number of milliseconds');
+  const wanted = flags.format ?? 'html';
+  if (!['toon', 'html'].includes(wanted)) throw new UsageError('--format must be html or toon');
   const state = await liveServer();
   const { note } = await call(state, '/api/poll', { file: path, timeoutMs });
   if (!note) {
     print({ status: 'timeout', next: `huddle-axi poll ${path}` });
     return 0;
   }
-  const { format, text } = cardText(note);
+  const { format, text } = cardText(note, wanted);
   const head = {
     note: note.text,
     card: note.card,
