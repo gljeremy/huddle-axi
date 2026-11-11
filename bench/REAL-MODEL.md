@@ -16,6 +16,19 @@ as a subagent and using the real CLI. The board ran in headless Chrome.
 
 ## How it was run
 
+To start a run (Node.js 22 or later, with Chrome or Edge as described in the
+[README checks](../README.md#checks)):
+
+```bash
+node bench/real-model.mjs toon real-model-toon-local.json
+```
+
+Use `html` instead of `toon` for the other format. The script prints a Bash setup
+command exporting a run-specific `HUDDLE_STATE_DIR`, followed by the agent's `poll`
+and patch-wrapper commands and `ready: <board>`. Run the agent separately, with that
+export applied to **both** commands: each run has its own server, isolated from normal
+live sessions. The script stops only that server on exit.
+
 [`real-model.mjs`](real-model.mjs) plays the facilitator:
 
 1. It makes a fresh sample board, opens it live and loads it in headless Chrome.
@@ -39,9 +52,15 @@ changed. The instructions said:
 Each run used a fresh agent and a fresh board. The order was TOON, HTML, HTML, TOON, so
 neither format always went first.
 
-[`summarize.mjs`](summarize.mjs) makes the tables from the result files
-(`real-model-*.json`). [`transcript-tokens.mjs`](transcript-tokens.mjs) reads the output
-token counts the API reported in each agent's transcript.
+[`summarize.mjs`](summarize.mjs) makes the timing and character-count tables from the
+result files (`real-model-*.json`):
+
+```bash
+node bench/summarize.mjs bench/real-model-toon.json bench/real-model-toon-2.json bench/real-model-html.json bench/real-model-html-2.json
+```
+
+[`transcript-tokens.mjs`](transcript-tokens.mjs) reads the output token counts the API
+reported in each agent's transcript; those counts are not in the result JSON files.
 
 ## Time
 

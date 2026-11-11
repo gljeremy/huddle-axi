@@ -1,10 +1,9 @@
 # huddle-axi
 
-Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end. With
-Claude Haiku 5.5 as the agent, a note takes a median of 3–4 s to become a changed card on
-screen. The results, including a TOON vs HTML comparison, are in
-[bench/REAL-MODEL.md](bench/REAL-MODEL.md). Step 0's measurements of stock Lavish are in
-[bench/RESULTS.md](bench/RESULTS.md).
+Status: step 2 done. The agent loop (`open`, `poll`, `patch`) works end to end.
+See [bench/REAL-MODEL.md](bench/REAL-MODEL.md) for the real-model measurements,
+TOON vs HTML comparison and limitations, and [bench/RESULTS.md](bench/RESULTS.md)
+for step 0's measurements of stock Lavish.
 
 A board for running a discussion on a shared screen. The facilitator leaves notes on
 cards; an agent picks each note up, rewrites that one card, and the card changes in place
@@ -18,8 +17,7 @@ goes its own way:
 - **Rigid cards.** Restricted HTML with fixed tags, plus an `html` escape hatch for
   diagrams and one-offs. See the card rules below for the authoritative restrictions.
 - **Card-level patches.** One card changes at a time, swapped in place with a glow that
-  survives a screen share. The agent reads and writes cards as TOON, and the CLI turns
-  that into the restricted HTML in the file.
+  survives a screen share. See the live-session instructions below for card formats.
 - **One writer.** Only the facilitator edits. The room watches the shared screen.
 
 The reviewed plan is in `lavish-fast-plan.html`.
@@ -86,8 +84,9 @@ meta[1]{key,value}:
 
 The field reference and HTML mapping live in [src/card-model.mjs](src/card-model.mjs).
 An `html` card uses the `html` field for its content, alongside its card attributes.
-A card whose markup doesn't fit the model is printed as its `<section>` HTML instead
-(`format: html`). `--format html` prints every card that way.
+`poll --format toon` is the default: a card whose markup doesn't fit the model is
+printed as its `<section>` HTML instead (`format: html`). `poll --format html` prints
+every card that way, including when using `--out`.
 
 ```bash
 node src/cli.mjs patch my-board.html --card-file card.toon --note "marked decided"
