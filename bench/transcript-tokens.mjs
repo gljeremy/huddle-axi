@@ -23,7 +23,7 @@ for (const line of readFileSync(process.argv[2], 'utf8').split('\n')) {
     if (block.type === 'thinking') turn.thinking = true;
     if (block.type !== 'tool_use') continue;
     if (/bench\/patch\.mjs/.test(block.input?.command ?? '')) turn.patch = true;
-    else if (/ poll /.test(block.input?.command ?? '')) turn.poll = true;
+    if (/ poll /.test(block.input?.command ?? '')) turn.poll = true;
   }
   turns.set(msg.id, turn);
 }
